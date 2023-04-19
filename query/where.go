@@ -26,6 +26,8 @@ const (
 	notIn
 	isNull
 	isNotNull
+	between
+	notBetween
 )
 
 func (c Condition) String() string {
@@ -50,6 +52,10 @@ func (c Condition) String() string {
 		return "IS NULL"
 	case isNotNull:
 		return "IS NOT NULL"
+	case between:
+		return "BETWEEN"
+	case notBetween:
+		return "NOT BETWEEN"
 	}
 	panic(c)
 }
@@ -68,6 +74,8 @@ func (w Where) String() string {
 		return fmt.Sprintf("%s %s (%s)", w.field.String(), w.cond.String(), stringer.Join(w.value, ", "))
 	case isNull, isNotNull:
 		return fmt.Sprintf("%s %s", w.field.String(), w.cond.String())
+	case between, notBetween:
+		return fmt.Sprintf("%s %s %s AND %s", w.field.String(), w.cond.String(), w.value[0].String(), w.value[1].String())
 	}
 
 	panic("unknown where condition")
@@ -92,6 +100,13 @@ func (w Where) PrepStmtString(num int) (string, []any) {
 		return fmt.Sprintf("%s %s (%s)", w.field.String(), w.cond.String(), strings.Join(nums, ", ")), vals
 	case isNull, isNotNull:
 		return fmt.Sprintf("%s %s", w.field.String(), w.cond.String()), nil
+	case between, notBetween:
+		nums := make([]string, len(vals))
+		for i := range vals {
+			nums[i] = fmt.Sprintf("$%d", num)
+			num++
+		}
+		return fmt.Sprintf("%s %s %s AND %s", w.field.String(), w.cond.String(), nums[0], nums[1]), vals
 	}
 
 	panic("unknown where condition")
@@ -152,5 +167,23 @@ func (wp wherePart) IsNull() Builder {
 
 func (wp wherePart) IsNotNull() Builder {
 	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: nil, cond: isNotNull})
+	return wp.b
+}
+
+func (wp wherePart) Between(start, end any) Builder {
+	values := []indent.Value{
+		wp.b.indentBuilder.Value(start),
+		wp.b.indentBuilder.Value(end),
+	}
+	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: values, cond: between})
+	return wp.b
+}
+
+func (wp wherePart) NotBetween(start, end any) Builder {
+	values := []indent.Value{
+		wp.b.indentBuilder.Value(start),
+		wp.b.indentBuilder.Value(end),
+	}
+	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: values, cond: notBetween})
 	return wp.b
 }

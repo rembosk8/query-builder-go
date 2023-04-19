@@ -156,4 +156,29 @@ func TestPGQueryBuilder(t *testing.T) {
 		assert.Len(t, args, 0)
 		assert.NoError(t, err)
 	})
+
+	t.Run("select where BETWEEN and NOT BETWEEN", func(t *testing.T) {
+		prebuild := qb.Select("id", "name", "value").
+			From(tableName).
+			Where("id").Between(1, 10).
+			Where("name").NotBetween("first", "second")
+
+		sql, err := prebuild.BuildPlain()
+		expectedPlainSql := fmt.Sprintf(
+			"SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" BETWEEN 1 AND 10 AND \"name\" NOT BETWEEN 'first' AND 'second'",
+			tableName,
+		)
+		assert.Equal(t, expectedPlainSql, sql)
+		assert.NoError(t, err)
+
+		sql, args, err := prebuild.Build()
+		expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" BETWEEN $1 AND $2 AND \"name\" NOT BETWEEN $3 AND $4", tableName)
+		assert.Equal(t, expectedSql, sql)
+		assert.Len(t, args, 4)
+		assert.Equal(t, 1, args[0])
+		assert.Equal(t, 10, args[1])
+		assert.Equal(t, "first", args[2])
+		assert.Equal(t, "second", args[3])
+		assert.NoError(t, err)
+	})
 }
