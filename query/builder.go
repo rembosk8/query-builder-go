@@ -20,6 +20,7 @@ type Builder struct {
 	indentBuilder *indent.Builder
 	offset        *uint
 	limit         *uint
+	orderBys      []Order
 }
 
 func New(indBuilder *indent.Builder) Builder {
@@ -118,6 +119,7 @@ func (b Builder) buildSqlPlain() string {
 	if len(b.wheres) > 0 {
 		sql += b.buildWherePlain()
 	}
+	sql += b.buildOrderBy()
 	sql += b.buildOffset()
 	sql += b.buildLimit()
 
@@ -131,6 +133,7 @@ func (b Builder) buildPrepStatement() (sql string, args []any) {
 		sqlWhere, args = b.buildWherePrepStmt()
 		sql += sqlWhere
 	}
+	sql += b.buildOrderBy()
 	sql += b.buildOffset()
 	sql += b.buildLimit()
 
@@ -152,4 +155,19 @@ func (b Builder) Offset(n uint) Builder {
 func (b Builder) Limit(n uint) Builder {
 	b.limit = pointer.To(n)
 	return b
+}
+
+func (b Builder) OrderBy(fieldName string) orderPart {
+	return orderPart{
+		column: b.indentBuilder.Indent(fieldName),
+		b:      b,
+	}
+}
+
+func (b Builder) buildOrderBy() string {
+	if len(b.orderBys) == 0 {
+		return ""
+	}
+
+	return fmt.Sprintf(" ORDER BY %s", stringer.Join(b.orderBys, ", "))
 }
