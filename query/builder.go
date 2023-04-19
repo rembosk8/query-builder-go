@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/AlekSi/pointer"
+	"github.com/rembosk8/query-builder-go/pointer"
 	"github.com/rembosk8/query-builder-go/query/indent"
 	"github.com/rembosk8/query-builder-go/stringer"
 )
@@ -117,9 +117,9 @@ func (b Builder) buildWherePrepStmt() (string, []any) {
 
 func (b Builder) buildSqlPlain() string {
 	sql := b.buildSelectFrom()
-	if len(b.wheres) > 0 {
-		sql += b.buildWherePlain()
-	}
+
+	sql += b.buildWherePlain()
+
 	sql += b.buildOrderBy()
 	sql += b.buildOffset()
 	sql += b.buildLimit()

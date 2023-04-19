@@ -1,3 +1,6 @@
+all: lint test
+.PHONY: all
+
 build/bin/golangci-lint: Makefile
 	mkdir -p build/bin
 	# Linux tar requires --wildcards for universal pattern. Darwin doesn't have such option.
@@ -11,5 +14,9 @@ lint: build/bin/golangci-lint
 .PHONY: lint
 
 test:
-	go test -count=1 -v ./...
+	go test -count=1 -v ./... -coverprofile=coverage.out
 .PHONY: test
+
+test-cpu-profile:
+	go test -cpuprofile=cpu.out ./...
+.PHONY: test-cpu-profile

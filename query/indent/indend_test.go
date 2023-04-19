@@ -26,6 +26,6 @@ func TestBuilder_Build(t *testing.T) {
 
 	assert.Equal(t, fmt.Sprintf(sFormat, name), bdr.Indent(name).String())
 
-	bdr = NewBuilder(nil)
+	bdr = NewBuilder()
 	assert.Equal(t, name, bdr.Indent(name).String())
 }

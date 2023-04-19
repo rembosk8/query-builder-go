@@ -19,11 +19,20 @@ func TestPGQueryBuilder(t *testing.T) {
 		assert.Empty(t, sql, "must return empty SQL when nothing is initialized")
 		assert.Nil(t, args, "must return nil for args when nothing is initialized")
 		assert.Error(t, err, "must return err")
+
+		sql, err = qb.BuildPlain()
+		assert.Empty(t, sql, "must return empty SQL when nothing is initialized")
+		assert.Error(t, err, "must return err")
 	})
 
 	t.Run("try to select all from specified table", func(t *testing.T) {
-		sql, args, err := qb.From(tableName).Build()
+		sql, err := qb.From(tableName).BuildPlain()
 		expectedSql := fmt.Sprintf("SELECT * FROM \"%s\"", tableName)
+		assert.Equal(t, expectedSql, sql)
+		assert.NoError(t, err)
+
+		sql, args, err := qb.From(tableName).Build()
+		expectedSql = fmt.Sprintf("SELECT * FROM \"%s\"", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Empty(t, args, "args must be empty")
 		assert.NoError(t, err)
@@ -35,11 +44,23 @@ func TestPGQueryBuilder(t *testing.T) {
 		assert.Equal(t, expectedSql, sql)
 		assert.Empty(t, args, "args must be empty")
 		assert.NoError(t, err)
+
+		sql, err = qb.Select("id").From(tableName).BuildPlain()
+		expectedSql = fmt.Sprintf("SELECT \"id\" FROM \"%s\"", tableName)
+		assert.Equal(t, expectedSql, sql)
+		assert.Empty(t, args, "args must be empty")
+		assert.NoError(t, err)
 	})
 
 	t.Run("try to select multiple fields from specified table", func(t *testing.T) {
 		sql, args, err := qb.Select("id", "name", "value").From(tableName).Build()
 		expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\"", tableName)
+		assert.Equal(t, expectedSql, sql)
+		assert.Empty(t, args, "args must be empty")
+		assert.NoError(t, err)
+
+		sql, err = qb.Select("id", "name", "value").From(tableName).BuildPlain()
+		expectedSql = fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\"", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Empty(t, args, "args must be empty")
 		assert.NoError(t, err)
