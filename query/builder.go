@@ -17,7 +17,15 @@ type Builder struct {
 	fields        []indent.Indent // select <fields>
 	table         *indent.Indent  // from <table>
 	wheres        []Where
-	indentBuilder indent.Builder
+	indentBuilder *indent.Builder
+}
+
+func New(indBuilder *indent.Builder) Builder {
+	if indBuilder == nil {
+		indBuilder = indent.NewBuilder()
+	}
+
+	return Builder{indentBuilder: indBuilder}
 }
 
 func (b Builder) Build() (sql string, args []any, err error) {

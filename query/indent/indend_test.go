@@ -20,7 +20,7 @@ var _ Sanitizer = mockSanitizer{}
 
 func TestBuilder_Build(t *testing.T) {
 	sanitizer := new(mockSanitizer)
-	bdr := NewBuilder(sanitizer)
+	bdr := NewBuilder(WithIndentSerializer(sanitizer))
 
 	name := "table"
 

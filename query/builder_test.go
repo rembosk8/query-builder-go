@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rembosk8/query-builder-go/query"
+	"github.com/rembosk8/query-builder-go/query/pg"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestQueryBuilder(t *testing.T) {
-	qb := query.Builder{}
+func TestPGQueryBuilder(t *testing.T) {
+	qb := pg.NewQueryBuilder()
 	tableName := "tableName"
+
+	t.Parallel()
 
 	t.Run("not initialized builder", func(t *testing.T) {
 		sql, args, err := qb.Build()
@@ -21,7 +23,7 @@ func TestQueryBuilder(t *testing.T) {
 
 	t.Run("try to select all from specified table", func(t *testing.T) {
 		sql, args, err := qb.From(tableName).Build()
-		expectedSql := fmt.Sprintf("SELECT * FROM %s", tableName)
+		expectedSql := fmt.Sprintf("SELECT * FROM \"%s\"", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Empty(t, args, "args must be empty")
 		assert.NoError(t, err)
@@ -29,7 +31,7 @@ func TestQueryBuilder(t *testing.T) {
 
 	t.Run("try to select id from specified table", func(t *testing.T) {
 		sql, args, err := qb.Select("id").From(tableName).Build()
-		expectedSql := fmt.Sprintf("SELECT id FROM %s", tableName)
+		expectedSql := fmt.Sprintf("SELECT \"id\" FROM \"%s\"", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Empty(t, args, "args must be empty")
 		assert.NoError(t, err)
@@ -37,7 +39,7 @@ func TestQueryBuilder(t *testing.T) {
 
 	t.Run("try to select multiple fields from specified table", func(t *testing.T) {
 		sql, args, err := qb.Select("id", "name", "value").From(tableName).Build()
-		expectedSql := fmt.Sprintf("SELECT id, name, value FROM %s", tableName)
+		expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\"", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Empty(t, args, "args must be empty")
 		assert.NoError(t, err)
@@ -48,12 +50,12 @@ func TestQueryBuilder(t *testing.T) {
 			From(tableName).
 			Where("id").Equal(1).Where("name").Equal("testName")
 		sql, err := prebuild.BuildPlain()
-		expectedPlainSql := fmt.Sprintf("SELECT id, name, value FROM %s WHERE id = 1 AND name = testName", tableName) //todo: strings must be quoted
+		expectedPlainSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" = 1 AND \"name\" = 'testName'", tableName)
 		assert.Equal(t, expectedPlainSql, sql)
 		assert.NoError(t, err)
 
 		sql, args, err := prebuild.Build()
-		expectedSql := fmt.Sprintf("SELECT id, name, value FROM %s WHERE id = $1 AND name = $2", tableName)
+		expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" = $1 AND \"name\" = $2", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Len(t, args, 2)
 		assert.Equal(t, 1, args[0])

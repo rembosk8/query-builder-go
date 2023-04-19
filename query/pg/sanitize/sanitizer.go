@@ -1,4 +1,4 @@
-package pg
+package sanitize
 
 import (
 	"encoding/hex"
@@ -8,16 +8,16 @@ import (
 	"time"
 )
 
-type IndentSanitizer struct{}
+type Indent struct{}
 
-func (is IndentSanitizer) Sanitize(val string) string {
+func (i Indent) Sanitize(val string) string {
 	s := strings.ReplaceAll(val, string([]byte{0}), "")
 	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
 }
 
-type ValueSanitizer struct{}
+type Value struct{}
 
-func (vs ValueSanitizer) Sanitize(val any) string {
+func (v Value) Sanitize(val any) string {
 	var str string
 	switch x := val.(type) {
 	case nil:
