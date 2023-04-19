@@ -100,15 +100,16 @@ func (b Builder) buildWherePrepStmt() (string, []any) {
 	}
 	var args []any
 	cnt := 1
-	prepStmt, val := b.wheres[0].PrepStmtString(cnt)
-	args = append(args, val)
+	prepStmt, vals := b.wheres[0].PrepStmtString(cnt)
+	args = append(args, vals...)
 	sql := fmt.Sprintf(" WHERE %s", prepStmt)
 
+	cnt += len(vals)
 	for i := 1; i < len(b.wheres); i++ {
-		cnt++
-		prepStmt, val = b.wheres[i].PrepStmtString(cnt)
-		args = append(args, val)
+		prepStmt, vals = b.wheres[i].PrepStmtString(cnt)
+		args = append(args, vals...)
 		sql += fmt.Sprintf(" AND %s", prepStmt)
+		cnt += len(vals)
 	}
 
 	return sql, args

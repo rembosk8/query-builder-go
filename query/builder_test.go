@@ -109,4 +109,30 @@ func TestPGQueryBuilder(t *testing.T) {
 		assert.Equal(t, "testName", args[1])
 		assert.NoError(t, err)
 	})
+
+	t.Run("select where IN condition", func(t *testing.T) {
+		prebuild := qb.Select("id", "name", "value").
+			From(tableName).
+			Where("id").In(1, 2, 3).
+			Where("name").In("name 1", "name 2")
+
+		sql, err := prebuild.BuildPlain()
+		expectedPlainSql := fmt.Sprintf(
+			"SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" IN (1, 2, 3) AND \"name\" IN ('name 1', 'name 2')",
+			tableName,
+		)
+		assert.Equal(t, expectedPlainSql, sql)
+		assert.NoError(t, err)
+
+		sql, args, err := prebuild.Build()
+		expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" IN ($1, $2, $3) AND \"name\" IN ($4, $5)", tableName)
+		assert.Equal(t, expectedSql, sql)
+		assert.Len(t, args, 5)
+		assert.Equal(t, 1, args[0])
+		assert.Equal(t, 2, args[1])
+		assert.Equal(t, 3, args[2])
+		assert.Equal(t, "name 1", args[3])
+		assert.Equal(t, "name 2", args[4])
+		assert.NoError(t, err)
+	})
 }
