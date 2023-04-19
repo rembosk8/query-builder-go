@@ -45,7 +45,7 @@ func TestPGQueryBuilder(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("try to select multiple fields from specified table", func(t *testing.T) {
+	t.Run("try to select multiple fields from specified table with WHERE", func(t *testing.T) {
 		prebuild := qb.Select("id", "name", "value").
 			From(tableName).
 			Where("id").Equal(1).Where("name").Equal("testName")
@@ -56,6 +56,27 @@ func TestPGQueryBuilder(t *testing.T) {
 
 		sql, args, err := prebuild.Build()
 		expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" = $1 AND \"name\" = $2", tableName)
+		assert.Equal(t, expectedSql, sql)
+		assert.Len(t, args, 2)
+		assert.Equal(t, 1, args[0])
+		assert.Equal(t, "testName", args[1])
+		assert.NoError(t, err)
+	})
+
+	t.Run("select with TOP and LIMIT", func(t *testing.T) {
+		prebuild := qb.Select("id", "name", "value").
+			From(tableName).
+			Where("id").Equal(1).
+			Where("name").Equal("testName").
+			Offset(10).
+			Limit(5)
+		sql, err := prebuild.BuildPlain()
+		expectedPlainSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" = 1 AND \"name\" = 'testName' OFFSET 10 LIMIT 5", tableName)
+		assert.Equal(t, expectedPlainSql, sql)
+		assert.NoError(t, err)
+
+		sql, args, err := prebuild.Build()
+		expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" = $1 AND \"name\" = $2 OFFSET 10 LIMIT 5", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Len(t, args, 2)
 		assert.Equal(t, 1, args[0])

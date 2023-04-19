@@ -18,6 +18,8 @@ type Builder struct {
 	table         *indent.Indent  // from <table>
 	wheres        []Where
 	indentBuilder *indent.Builder
+	offset        *uint
+	limit         *uint
 }
 
 func New(indBuilder *indent.Builder) Builder {
@@ -75,6 +77,22 @@ func (b Builder) buildWherePlain() string {
 	return fmt.Sprintf(" WHERE %s", stringer.Join(b.wheres, " AND ")) //todo: build AND and OR separately
 }
 
+func (b Builder) buildOffset() string {
+	if b.offset == nil {
+		return ""
+	}
+
+	return fmt.Sprintf(" OFFSET %d", *b.offset)
+}
+
+func (b Builder) buildLimit() string {
+	if b.limit == nil {
+		return ""
+	}
+
+	return fmt.Sprintf(" LIMIT %d", *b.limit)
+}
+
 func (b Builder) buildWherePrepStmt() (string, []any) {
 	if len(b.wheres) == 0 {
 		return "", nil
@@ -100,6 +118,8 @@ func (b Builder) buildSqlPlain() string {
 	if len(b.wheres) > 0 {
 		sql += b.buildWherePlain()
 	}
+	sql += b.buildOffset()
+	sql += b.buildLimit()
 
 	return sql
 }
@@ -111,6 +131,8 @@ func (b Builder) buildPrepStatement() (sql string, args []any) {
 		sqlWhere, args = b.buildWherePrepStmt()
 		sql += sqlWhere
 	}
+	sql += b.buildOffset()
+	sql += b.buildLimit()
 
 	return sql, args
 }
@@ -120,4 +142,14 @@ func (b Builder) Where(columnName string) wherePart {
 		column: b.indentBuilder.Indent(columnName),
 		b:      b,
 	}
+}
+
+func (b Builder) Offset(n uint) Builder {
+	b.offset = pointer.To(n)
+	return b
+}
+
+func (b Builder) Limit(n uint) Builder {
+	b.limit = pointer.To(n)
+	return b
 }
