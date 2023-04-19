@@ -23,6 +23,9 @@ const (
 	gt
 	gq
 	in
+	notIn
+	isNull
+	isNotNull
 )
 
 func (c Condition) String() string {
@@ -41,6 +44,12 @@ func (c Condition) String() string {
 		return ">="
 	case in:
 		return "IN"
+	case notIn:
+		return "NOT IN"
+	case isNull:
+		return "IS NULL"
+	case isNotNull:
+		return "IS NOT NULL"
 	}
 	panic(c)
 }
@@ -55,8 +64,10 @@ func (w Where) String() string {
 	switch w.cond {
 	case eq, ne, le, lq, gt, gq:
 		return fmt.Sprintf("%s %s %s", w.field.String(), w.cond.String(), w.value[0].String())
-	case in:
+	case in, notIn:
 		return fmt.Sprintf("%s %s (%s)", w.field.String(), w.cond.String(), stringer.Join(w.value, ", "))
+	case isNull, isNotNull:
+		return fmt.Sprintf("%s %s", w.field.String(), w.cond.String())
 	}
 
 	panic("unknown where condition")
@@ -71,7 +82,7 @@ func (w Where) PrepStmtString(num int) (string, []any) {
 	switch w.cond {
 	case eq, ne, le, lq, gt, gq:
 		return fmt.Sprintf("%s %s $%d", w.field.String(), w.cond.String(), num), vals
-	case in:
+	case in, notIn:
 		nums := make([]string, len(vals))
 		for i := range vals {
 			nums[i] = fmt.Sprintf("$%d", num)
@@ -79,6 +90,8 @@ func (w Where) PrepStmtString(num int) (string, []any) {
 		}
 
 		return fmt.Sprintf("%s %s (%s)", w.field.String(), w.cond.String(), strings.Join(nums, ", ")), vals
+	case isNull, isNotNull:
+		return fmt.Sprintf("%s %s", w.field.String(), w.cond.String()), nil
 	}
 
 	panic("unknown where condition")
@@ -120,5 +133,24 @@ func (wp wherePart) In(vs ...any) Builder {
 		values[i] = wp.b.indentBuilder.Value(vs[i])
 	}
 	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: values, cond: in})
+	return wp.b
+}
+
+func (wp wherePart) NotIn(vs ...any) Builder {
+	values := make([]indent.Value, len(vs))
+	for i := range vs {
+		values[i] = wp.b.indentBuilder.Value(vs[i])
+	}
+	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: values, cond: notIn})
+	return wp.b
+}
+
+func (wp wherePart) IsNull() Builder {
+	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: nil, cond: isNull})
+	return wp.b
+}
+
+func (wp wherePart) IsNotNull() Builder {
+	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: nil, cond: isNotNull})
 	return wp.b
 }
