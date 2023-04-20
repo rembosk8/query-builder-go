@@ -21,6 +21,10 @@ type Builder struct {
 	offset        *uint
 	limit         *uint
 	orderBys      []Order
+
+	err error //todo: write error during query construct
+
+	//todo: use bytes.Buffer instead of fmt.Sprintf
 }
 
 func New(indBuilder *indent.Builder) Builder {
@@ -32,6 +36,9 @@ func New(indBuilder *indent.Builder) Builder {
 }
 
 func (b Builder) Build() (sql string, args []any, err error) {
+	if b.err != nil {
+		return "", nil, err
+	}
 	if b.table == nil {
 		return "", nil, ErrTableNotSet
 	}
@@ -41,6 +48,9 @@ func (b Builder) Build() (sql string, args []any, err error) {
 }
 
 func (b Builder) BuildPlain() (sql string, err error) {
+	if b.err != nil {
+		return "", err
+	}
 	if b.table == nil {
 		return "", ErrTableNotSet
 	}
@@ -53,6 +63,7 @@ func (b Builder) From(tableName string) Builder {
 }
 
 func (b Builder) Select(fields ...string) Builder {
+	//todo: create a separate method which can extract fields tags: by fields, by the whole struct
 	for _, f := range fields {
 		b.fields = append(b.fields, b.indentBuilder.Indent(f))
 	}
