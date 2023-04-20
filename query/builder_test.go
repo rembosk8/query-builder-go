@@ -207,12 +207,26 @@ func TestPGQueryBuilder(t *testing.T) {
 func BenchmarkPGBuilderPlain(b *testing.B) {
 	qb := pg.NewQueryBuilder()
 
-	for i := 0; i < b.N; i++ {
-		_, _ = qb.Select("one", "two", "three").
-			From("table 1").
-			Where("id").Equal(1).
-			Where("name").In("n1", "n2", "n3").
-			Where("count").Between(1, 100).
-			Limit(100).Offset(100).BuildPlain()
-	}
+	b.Run("build plain", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, _ = qb.Select("one", "two", "three").
+				From("table 1").
+				Where("id").Equal(1).
+				Where("name").In("n1", "n2", "n3").
+				Where("count").Between(1, 100).
+				Limit(100).Offset(100).BuildPlain()
+		}
+	})
+
+	b.Run("build with statements", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, _, _ = qb.Select("one", "two", "three").
+				From("table 1").
+				Where("id").Equal(1).
+				Where("name").In("n1", "n2", "n3").
+				Where("count").Between(1, 100).
+				Limit(100).Offset(100).Build()
+		}
+	})
+
 }
