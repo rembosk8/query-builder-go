@@ -14,9 +14,13 @@ lint: build/bin/golangci-lint
 .PHONY: lint
 
 test:
-	go test -count=1 -v ./... -coverprofile=coverage.out
+	go test -count=1 --race -v ./... -coverprofile=coverage.out
 .PHONY: test
 
 test-cpu-profile:
-	go test -cpuprofile=cpu.out ./...
+	go test ./...
 .PHONY: test-cpu-profile
+
+bench:
+	go test -bench=./...
+.PHONY: bench
