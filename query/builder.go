@@ -3,6 +3,7 @@ package query
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/rembosk8/query-builder-go/pointer"
 	"github.com/rembosk8/query-builder-go/query/indent"
@@ -22,9 +23,10 @@ type Builder struct {
 	limit         *uint
 	orderBys      []Order
 
-	err error //todo: write error during query construct
+	err error
 
-	//todo: use bytes.Buffer instead of fmt.Sprintf
+	strBuilder strings.Builder
+	//l int  //precalculated len of statement
 }
 
 func New(indBuilder *indent.Builder) Builder {
@@ -42,9 +44,9 @@ func (b Builder) Build() (sql string, args []any, err error) {
 	if b.table == nil {
 		return "", nil, ErrTableNotSet
 	}
-	sql, args = b.buildPrepStatement()
+	args = b.buildPrepStatement()
 
-	return sql, args, nil
+	return b.strBuilder.String(), args, nil
 }
 
 func (b Builder) BuildPlain() (sql string, err error) {
@@ -54,7 +56,13 @@ func (b Builder) BuildPlain() (sql string, err error) {
 	if b.table == nil {
 		return "", ErrTableNotSet
 	}
-	return b.buildSqlPlain(), nil
+
+	b.buildSqlPlain()
+	if b.err != nil {
+		return "", err
+	}
+
+	return b.strBuilder.String(), nil
 }
 
 func (b Builder) From(tableName string) Builder {
@@ -70,7 +78,7 @@ func (b Builder) Select(fields ...string) Builder {
 	return b
 }
 
-func (b Builder) getFields() string {
+func (b *Builder) getFields() string {
 	if len(b.fields) == 0 {
 		return all
 	}
@@ -78,81 +86,96 @@ func (b Builder) getFields() string {
 	return stringer.Join(b.fields, ", ")
 }
 
-func (b Builder) buildSelectFrom() string {
-	return fmt.Sprintf("SELECT %s FROM %s", b.getFields(), b.table.String())
-}
-
-func (b Builder) buildWherePlain() string {
-	if len(b.wheres) == 0 {
-		return ""
+func (b *Builder) buildSelectFrom() {
+	if b.err != nil {
+		return
 	}
-	return fmt.Sprintf(" WHERE %s", stringer.Join(b.wheres, " AND ")) //todo: build AND and OR separately
+
+	_, b.err = fmt.Fprintf(&b.strBuilder, "SELECT %s FROM %s", b.getFields(), b.table.String())
 }
 
-func (b Builder) buildOffset() string {
+func (b *Builder) buildWherePlain() {
+	if b.err != nil {
+		return
+	}
+	if len(b.wheres) == 0 {
+		return
+	}
+	_, b.err = fmt.Fprintf(&b.strBuilder, " WHERE %s", stringer.Join(b.wheres, " AND ")) //todo: build AND and OR separately
+}
+
+func (b *Builder) buildOffset() {
+	if b.err != nil {
+		return
+	}
 	if b.offset == nil {
-		return ""
+		return
 	}
 
-	return fmt.Sprintf(" OFFSET %d", *b.offset)
+	_, b.err = fmt.Fprintf(&b.strBuilder, " OFFSET %d", *b.offset)
 }
 
-func (b Builder) buildLimit() string {
+func (b *Builder) buildLimit() {
+	if b.err != nil {
+		return
+	}
 	if b.limit == nil {
-		return ""
+		return
 	}
-
-	return fmt.Sprintf(" LIMIT %d", *b.limit)
+	_, b.err = fmt.Fprintf(&b.strBuilder, " LIMIT %d", *b.limit)
 }
 
-func (b Builder) buildWherePrepStmt() (string, []any) {
+func (b *Builder) buildWherePrepStmt() []any {
 	if len(b.wheres) == 0 {
-		return "", nil
+		return nil
+	}
+	if b.err != nil {
+		return nil
 	}
 	var args []any
 	cnt := 1
 	prepStmt, vals := b.wheres[0].PrepStmtString(cnt)
 	args = append(args, vals...)
-	sql := fmt.Sprintf(" WHERE %s", prepStmt)
+	_, b.err = fmt.Fprintf(&b.strBuilder, " WHERE %s", prepStmt)
 
 	cnt += len(vals)
 	for i := 1; i < len(b.wheres); i++ {
 		prepStmt, vals = b.wheres[i].PrepStmtString(cnt)
 		args = append(args, vals...)
-		sql += fmt.Sprintf(" AND %s", prepStmt)
+		_, b.err = fmt.Fprintf(&b.strBuilder, " AND %s", prepStmt)
+		if b.err != nil {
+			return nil
+		}
 		cnt += len(vals)
 	}
 
-	return sql, args
+	return args
 }
 
-func (b Builder) buildSqlPlain() string {
-	sql := b.buildSelectFrom()
+func (b *Builder) buildSqlPlain() {
+	b.buildSelectFrom()
 
-	sql += b.buildWherePlain()
+	b.buildWherePlain()
 
-	sql += b.buildOrderBy()
-	sql += b.buildOffset()
-	sql += b.buildLimit()
-
-	return sql
+	b.buildOrderBy()
+	b.buildOffset()
+	b.buildLimit()
 }
 
-func (b Builder) buildPrepStatement() (sql string, args []any) {
-	sql = b.buildSelectFrom()
-	if len(b.wheres) > 0 {
-		var sqlWhere string
-		sqlWhere, args = b.buildWherePrepStmt()
-		sql += sqlWhere
-	}
-	sql += b.buildOrderBy()
-	sql += b.buildOffset()
-	sql += b.buildLimit()
+func (b *Builder) buildPrepStatement() (args []any) {
+	b.buildSelectFrom()
 
-	return sql, args
+	args = b.buildWherePrepStmt()
+
+	b.buildOrderBy()
+	b.buildOffset()
+	b.buildLimit()
+
+	return args
 }
 
 func (b Builder) Where(columnName string) wherePart {
+	//b.l += len(columnName)
 	return wherePart{
 		column: b.indentBuilder.Indent(columnName),
 		b:      b,
@@ -160,26 +183,31 @@ func (b Builder) Where(columnName string) wherePart {
 }
 
 func (b Builder) Offset(n uint) Builder {
+	//b.l += 12
 	b.offset = pointer.To(n)
 	return b
 }
 
 func (b Builder) Limit(n uint) Builder {
+	//b.l += 12
 	b.limit = pointer.To(n)
 	return b
 }
 
 func (b Builder) OrderBy(fieldName string) orderPart {
+	//b.l += 15 + len(fieldName)
 	return orderPart{
 		column: b.indentBuilder.Indent(fieldName),
 		b:      b,
 	}
 }
 
-func (b Builder) buildOrderBy() string {
-	if len(b.orderBys) == 0 {
-		return ""
+func (b *Builder) buildOrderBy() {
+	if b.err != nil {
+		return
 	}
-
-	return fmt.Sprintf(" ORDER BY %s", stringer.Join(b.orderBys, ", "))
+	if len(b.orderBys) == 0 {
+		return
+	}
+	_, b.err = fmt.Fprintf(&b.strBuilder, " ORDER BY %s", stringer.Join(b.orderBys, ", "))
 }
