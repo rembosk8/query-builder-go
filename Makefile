@@ -27,10 +27,10 @@ bench:
 
 old_bench.out: Makefile
 	git stash
-	go test -bench=. -benchmem -count 6 -run=^# ./query/builder_test.go > old_bench.out
+	go test -bench=. -benchmem -cpu 1 -count 6 -run=^# ./query/builder_test.go > old_bench.out
 	git stash pop
 
 bench-cmp: old_bench.out
-	go test -bench=. -benchmem -count 6 -run=^# ./query/builder_test.go > new_bench.out
+	go test -bench=. -benchmem -cpu 1 -count 6 -run=^# ./query/builder_test.go > new_bench.out
 	benchstat old_bench.out new_bench.out
 .PHONY: bench-cmp

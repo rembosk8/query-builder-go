@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rembosk8/query-builder-go/pointer"
+	"github.com/rembosk8/query-builder-go/helpers/pointer"
+	"github.com/rembosk8/query-builder-go/helpers/stringer"
 	"github.com/rembosk8/query-builder-go/query/indent"
-	"github.com/rembosk8/query-builder-go/stringer"
 )
 
 const all = "*"
