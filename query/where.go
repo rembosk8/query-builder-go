@@ -2,6 +2,7 @@ package query
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/rembosk8/query-builder-go/helpers/stringer"
@@ -81,7 +82,7 @@ func (w *Where) String() string {
 	panic("unknown where condition")
 }
 
-func (w *Where) PrepStmtString(num int) (string, []any) {
+func (w *Where) PrepStmtString(num int, wr io.Writer) ([]any, error) {
 	vals := make([]any, len(w.value))
 	for i := range w.value {
 		vals[i] = w.value[i].Value
@@ -89,24 +90,39 @@ func (w *Where) PrepStmtString(num int) (string, []any) {
 
 	switch w.cond {
 	case eq, ne, le, lq, gt, gq:
-		return fmt.Sprintf("%s %s $%d", w.field.String(), w.cond.String(), num), vals
+		if _, err := fmt.Fprintf(wr, "%s %s $%d", w.field.String(), w.cond.String(), num); err != nil {
+			return nil, fmt.Errorf("write into writer: %w", err)
+		}
+		return vals, nil
 	case in, notIn:
 		nums := make([]string, len(vals))
 		for i := range vals {
 			nums[i] = fmt.Sprintf("$%d", num)
 			num++
 		}
+		if _, err := fmt.Fprintf(wr, "%s %s (%s)", w.field.String(), w.cond.String(), strings.Join(nums, ", ")); err != nil {
+			return nil, fmt.Errorf("write into writer: %w", err)
+		}
 
-		return fmt.Sprintf("%s %s (%s)", w.field.String(), w.cond.String(), strings.Join(nums, ", ")), vals
+		return vals, nil
 	case isNull, isNotNull:
-		return fmt.Sprintf("%s %s", w.field.String(), w.cond.String()), nil
+		if _, err := fmt.Fprintf(wr, "%s %s", w.field.String(), w.cond.String()); err != nil {
+			return nil, fmt.Errorf("write into writer: %w", err)
+		}
+
+		return nil, nil
 	case between, notBetween:
 		nums := make([]string, len(vals))
 		for i := range vals {
 			nums[i] = fmt.Sprintf("$%d", num)
 			num++
 		}
-		return fmt.Sprintf("%s %s %s AND %s", w.field.String(), w.cond.String(), nums[0], nums[1]), vals
+
+		if _, err := fmt.Fprintf(wr, "%s %s %s AND %s", w.field.String(), w.cond.String(), nums[0], nums[1]); err != nil {
+			return nil, fmt.Errorf("write into writer: %w", err)
+		}
+
+		return vals, nil
 	}
 
 	panic("unknown where condition")
