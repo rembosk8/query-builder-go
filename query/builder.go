@@ -17,7 +17,7 @@ var ErrTableNotSet = errors.New("table name not provided")
 type Builder struct {
 	fields        []indent.Indent // select <fields>
 	table         *indent.Indent  // from <table>
-	wheres        []Where
+	wheres        []*Where
 	indentBuilder *indent.Builder
 	offset        *uint
 	limit         *uint
