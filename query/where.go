@@ -2,6 +2,7 @@ package query
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/rembosk8/query-builder-go/helpers/stringer"
@@ -66,7 +67,7 @@ type Where struct {
 	cond  Condition
 }
 
-func (w Where) String() string {
+func (w *Where) String() string {
 	switch w.cond {
 	case eq, ne, le, lq, gt, gq:
 		return fmt.Sprintf("%s %s %s", w.field.String(), w.cond.String(), w.value[0].String())
@@ -81,7 +82,7 @@ func (w Where) String() string {
 	panic("unknown where condition")
 }
 
-func (w Where) PrepStmtString(num int) (string, []any) {
+func (w *Where) PrepStmtString(num int, wr io.Writer) ([]any, error) {
 	vals := make([]any, len(w.value))
 	for i := range w.value {
 		vals[i] = w.value[i].Value
@@ -89,56 +90,71 @@ func (w Where) PrepStmtString(num int) (string, []any) {
 
 	switch w.cond {
 	case eq, ne, le, lq, gt, gq:
-		return fmt.Sprintf("%s %s $%d", w.field.String(), w.cond.String(), num), vals
+		if _, err := fmt.Fprintf(wr, "%s %s $%d", w.field.String(), w.cond.String(), num); err != nil {
+			return nil, fmt.Errorf("write into writer: %w", err)
+		}
+		return vals, nil
 	case in, notIn:
 		nums := make([]string, len(vals))
 		for i := range vals {
 			nums[i] = fmt.Sprintf("$%d", num)
 			num++
 		}
+		if _, err := fmt.Fprintf(wr, "%s %s (%s)", w.field.String(), w.cond.String(), strings.Join(nums, ", ")); err != nil {
+			return nil, fmt.Errorf("write into writer: %w", err)
+		}
 
-		return fmt.Sprintf("%s %s (%s)", w.field.String(), w.cond.String(), strings.Join(nums, ", ")), vals
+		return vals, nil
 	case isNull, isNotNull:
-		return fmt.Sprintf("%s %s", w.field.String(), w.cond.String()), nil
+		if _, err := fmt.Fprintf(wr, "%s %s", w.field.String(), w.cond.String()); err != nil {
+			return nil, fmt.Errorf("write into writer: %w", err)
+		}
+
+		return nil, nil
 	case between, notBetween:
 		nums := make([]string, len(vals))
 		for i := range vals {
 			nums[i] = fmt.Sprintf("$%d", num)
 			num++
 		}
-		return fmt.Sprintf("%s %s %s AND %s", w.field.String(), w.cond.String(), nums[0], nums[1]), vals
+
+		if _, err := fmt.Fprintf(wr, "%s %s %s AND %s", w.field.String(), w.cond.String(), nums[0], nums[1]); err != nil {
+			return nil, fmt.Errorf("write into writer: %w", err)
+		}
+
+		return vals, nil
 	}
 
 	panic("unknown where condition")
 }
 
 func (wp wherePart) Equal(v any) Builder {
-	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: eq})
+	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: eq})
 	return wp.b
 }
 
 func (wp wherePart) NotEqual(v any) Builder {
-	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: ne})
+	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: ne})
 	return wp.b
 }
 
 func (wp wherePart) Less(v any) Builder {
-	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: le})
+	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: le})
 	return wp.b
 }
 
 func (wp wherePart) LessEqual(v any) Builder {
-	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: lq})
+	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: lq})
 	return wp.b
 }
 
 func (wp wherePart) Greater(v any) Builder {
-	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: gt})
+	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: gt})
 	return wp.b
 }
 
 func (wp wherePart) GreaterEqual(v any) Builder {
-	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: gq})
+	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: gq})
 	return wp.b
 }
 
@@ -147,7 +163,7 @@ func (wp wherePart) In(vs ...any) Builder {
 	for i := range vs {
 		values[i] = wp.b.indentBuilder.Value(vs[i])
 	}
-	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: values, cond: in})
+	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: values, cond: in})
 	return wp.b
 }
 
@@ -156,17 +172,17 @@ func (wp wherePart) NotIn(vs ...any) Builder {
 	for i := range vs {
 		values[i] = wp.b.indentBuilder.Value(vs[i])
 	}
-	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: values, cond: notIn})
+	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: values, cond: notIn})
 	return wp.b
 }
 
 func (wp wherePart) IsNull() Builder {
-	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: nil, cond: isNull})
+	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: nil, cond: isNull})
 	return wp.b
 }
 
 func (wp wherePart) IsNotNull() Builder {
-	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: nil, cond: isNotNull})
+	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: nil, cond: isNotNull})
 	return wp.b
 }
 
@@ -175,7 +191,7 @@ func (wp wherePart) Between(start, end any) Builder {
 		wp.b.indentBuilder.Value(start),
 		wp.b.indentBuilder.Value(end),
 	}
-	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: values, cond: between})
+	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: values, cond: between})
 	return wp.b
 }
 
@@ -184,6 +200,6 @@ func (wp wherePart) NotBetween(start, end any) Builder {
 		wp.b.indentBuilder.Value(start),
 		wp.b.indentBuilder.Value(end),
 	}
-	wp.b.wheres = append(wp.b.wheres, Where{field: wp.column, value: values, cond: notBetween})
+	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: values, cond: notBetween})
 	return wp.b
 }

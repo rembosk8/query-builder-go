@@ -16,10 +16,10 @@ func NewBuilder(opts ...BuilderOption) *Builder {
 }
 
 func (b *Builder) Indent(name string) Indent {
-	return Indent{
-		Name:      name,
-		sanitizer: b.indentSanitizer,
+	if b.indentSanitizer != nil {
+		name = b.indentSanitizer.Sanitize(name)
 	}
+	return Indent(name)
 }
 
 func (b *Builder) Value(val any) Value {

@@ -17,7 +17,7 @@ var ErrTableNotSet = errors.New("table name not provided")
 type Builder struct {
 	fields        []indent.Indent // select <fields>
 	table         *indent.Indent  // from <table>
-	wheres        []Where
+	wheres        []*Where
 	indentBuilder *indent.Builder
 	offset        *uint
 	limit         *uint
@@ -132,20 +132,27 @@ func (b *Builder) buildWherePrepStmt() []any {
 	if b.err != nil {
 		return nil
 	}
-	var args []any
+	var args, vals []any
 	cnt := 1
-	prepStmt, vals := b.wheres[0].PrepStmtString(cnt)
+
+	_, b.err = fmt.Fprint(&b.strBuilder, " WHERE ")
+	vals, b.err = b.wheres[0].PrepStmtString(cnt, &b.strBuilder)
+	if b.err != nil {
+		return nil
+	}
 	args = append(args, vals...)
-	_, b.err = fmt.Fprintf(&b.strBuilder, " WHERE %s", prepStmt)
 
 	cnt += len(vals)
 	for i := 1; i < len(b.wheres); i++ {
-		prepStmt, vals = b.wheres[i].PrepStmtString(cnt)
-		args = append(args, vals...)
-		_, b.err = fmt.Fprintf(&b.strBuilder, " AND %s", prepStmt)
+		_, b.err = fmt.Fprint(&b.strBuilder, " AND ")
 		if b.err != nil {
 			return nil
 		}
+		vals, b.err = b.wheres[i].PrepStmtString(cnt, &b.strBuilder)
+		if b.err != nil {
+			return nil
+		}
+		args = append(args, vals...)
 		cnt += len(vals)
 	}
 

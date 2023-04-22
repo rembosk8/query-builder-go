@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/rembosk8/query-builder-go/query"
 	"github.com/rembosk8/query-builder-go/query/pg"
 	"github.com/stretchr/testify/assert"
 )
@@ -204,29 +205,70 @@ func TestPGQueryBuilder(t *testing.T) {
 	})
 }
 
-func BenchmarkPGBuilderPlain(b *testing.B) {
+func TestQueryBuilderReusage(t *testing.T) {
+	var (
+		sql  string
+		err  error
+		args []any
+	)
 	qb := pg.NewQueryBuilder()
+	tableName := "tableName"
+
+	prepBuild := qb.Select("id", "name", "year").From(tableName)
+
+	sql, args, err = prepBuild.Where("first").Equal(1).Build()
+	expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"year\" FROM \"%s\" WHERE \"first\" = $1", tableName)
+	assert.Equal(t, expectedSql, sql)
+	assert.NoError(t, err)
+	assert.Len(t, args, 1)
+	assert.Equal(t, 1, args[0])
+
+	sql, args, err = prepBuild.Where("first2").Equal(10).Where("second").Equal(20).Build()
+	expectedSql = fmt.Sprintf("SELECT \"id\", \"name\", \"year\" FROM \"%s\" WHERE \"first2\" = $1 AND \"second\" = $2", tableName)
+	assert.Equal(t, expectedSql, sql)
+	assert.NoError(t, err)
+	assert.Len(t, args, 2)
+	assert.Equal(t, 10, args[0])
+	assert.Equal(t, 20, args[1])
+}
+
+func BenchmarkPGBuilderPlain(b *testing.B) {
+	var (
+		preparedQuery query.Builder
+		sql           string
+		err           error
+		args          []any
+	)
+	qb := pg.NewQueryBuilder()
+
+	getPrepBuild := func() query.Builder {
+		return qb.Select("one", "two", "three").
+			From("table 1").
+			Where("id").Equal(1).
+			Where("name").In("n1", "n2", "n3").
+			Where("count").Between(1, 100).
+			Limit(100).Offset(100)
+	}
+	preparedQuery = getPrepBuild()
+	b.Run("prepare query", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			preparedQuery = getPrepBuild()
+		}
+	})
 
 	b.Run("build plain", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, _ = qb.Select("one", "two", "three").
-				From("table 1").
-				Where("id").Equal(1).
-				Where("name").In("n1", "n2", "n3").
-				Where("count").Between(1, 100).
-				Limit(100).Offset(100).BuildPlain()
+			sql, err = preparedQuery.BuildPlain()
 		}
 	})
+
+	fmt.Println(sql, err)
 
 	b.Run("build with statements", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, _, _ = qb.Select("one", "two", "three").
-				From("table 1").
-				Where("id").Equal(1).
-				Where("name").In("n1", "n2", "n3").
-				Where("count").Between(1, 100).
-				Limit(100).Offset(100).Build()
+			sql, args, err = preparedQuery.Build()
 		}
 	})
 
+	fmt.Println(sql, args, err)
 }

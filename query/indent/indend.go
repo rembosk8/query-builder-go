@@ -4,19 +4,10 @@ import (
 	"fmt"
 )
 
-type Indent struct {
-	Name      string
-	sanitizer Sanitizer
-}
-
-var _ fmt.Stringer = &Indent{}
+type Indent string
 
 func (s Indent) String() string {
-	if s.sanitizer != nil {
-		return s.sanitizer.Sanitize(s.Name)
-	}
-
-	return s.Name
+	return string(s)
 }
 
 type Value struct {
