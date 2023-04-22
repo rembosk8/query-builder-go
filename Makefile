@@ -25,21 +25,16 @@ RUN_COUNT ?= 6
 CPU ?= 1
 bench:
 ifdef out_file
-	go test -bench=. -benchmem -cpu ${CPU} -count $(RUN_COUNT) -run=^# ./query/builder_test.go > $(out_file)
+	go test -bench=. -benchmem -cpu ${CPU} -count $(RUN_COUNT) -run=^# ./tests/benchmark/*_test.go > $(out_file)
 else
-	go test -bench=. -benchmem -cpu ${CPU} -count $(RUN_COUNT) -run=^# ./query/builder_test.go
+	go test -bench=. -benchmem -cpu ${CPU} -count $(RUN_COUNT) -run=^# ./tests/benchmark/*_test.go
 endif
 .PHONY: bench
 
 old_bench.out: Makefile
-	git stash
-	out_file=old_bench.out make bench
-	git stash pop
+	git stash; out_file=old_bench.out make bench; git stash pop; echo "OK"
 
 bench-cmp: old_bench.out
 	out_file=new_bench.out make bench
 	benchstat old_bench.out new_bench.out
 .PHONY: bench-cmp
-
-b1:
-	out_file=1.txt make bench

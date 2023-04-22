@@ -15,17 +15,17 @@ const all = "*"
 var ErrTableNotSet = errors.New("table name not provided")
 
 type Builder struct {
-	fields        []indent.Indent // select <fields>
-	table         *indent.Indent  // from <table>
-	wheres        []*Where
-	indentBuilder *indent.Builder
-	offset        *uint
-	limit         *uint
-	orderBys      []Order
+	fields   []indent.Indent // select <fields>
+	table    *indent.Indent  // from <table>
+	wheres   []*Where
+	offset   *uint
+	limit    *uint
+	orderBys []Order
 
 	err error
 
-	strBuilder strings.Builder
+	indentBuilder *indent.Builder
+	strBuilder    strings.Builder
 	//l int  //precalculated len of statement
 }
 
