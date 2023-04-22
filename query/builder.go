@@ -26,7 +26,6 @@ type Builder struct {
 
 	indentBuilder *indent.Builder
 	strBuilder    *strings.Builder
-	//l int  //precalculated len of statement
 }
 
 func New(indBuilder *indent.Builder) Builder {
@@ -187,7 +186,6 @@ func (b *Builder) buildPrepStatement() (args []any) {
 }
 
 func (b Builder) Where(columnName string) wherePart {
-	//b.l += len(columnName)
 	return wherePart{
 		column: b.indentBuilder.Indent(columnName),
 		b:      b,
@@ -195,19 +193,16 @@ func (b Builder) Where(columnName string) wherePart {
 }
 
 func (b Builder) Offset(n uint) Builder {
-	//b.l += 12
 	b.offset = pointer.To(n)
 	return b
 }
 
 func (b Builder) Limit(n uint) Builder {
-	//b.l += 12
 	b.limit = pointer.To(n)
 	return b
 }
 
 func (b Builder) OrderBy(fieldName string) orderPart {
-	//b.l += 15 + len(fieldName)
 	return orderPart{
 		column: b.indentBuilder.Indent(fieldName),
 		b:      b,
