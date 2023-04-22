@@ -38,3 +38,6 @@ bench-cmp: old_bench.out
 	out_file=new_bench.out make bench
 	benchstat old_bench.out new_bench.out
 .PHONY: bench-cmp
+
+bench-base:
+	out_file=old_bench.out make bench
