@@ -17,12 +17,9 @@ test:
 	go test -count=1 --race -v ./... -coverprofile=coverage.out
 .PHONY: test
 
-test-cpu-profile:
-	go test ./...
-.PHONY: test-cpu-profile
-
 RUN_COUNT ?= 6
 CPU ?= 1
+
 bench:
 ifdef out_file
 	go test -bench=. -benchmem -cpu ${CPU} -count $(RUN_COUNT) -run=^# ./tests/benchmark/*_test.go > $(out_file)
@@ -31,7 +28,7 @@ else
 endif
 .PHONY: bench
 
-old_bench.out: Makefile
+old_bench.out:
 	git stash; out_file=old_bench.out make bench; git stash pop; echo "OK"
 
 bench-cmp: old_bench.out
