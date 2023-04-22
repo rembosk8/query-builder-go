@@ -21,8 +21,8 @@ test-cpu-profile:
 	go test ./...
 .PHONY: test-cpu-profile
 
-RUN_COUNT = 3
-CPU = 1
+RUN_COUNT ?= 6
+CPU ?= 1
 bench:
 ifdef out_file
 	go test -bench=. -benchmem -cpu ${CPU} -count $(RUN_COUNT) -run=^# ./query/builder_test.go > $(out_file)

@@ -232,7 +232,7 @@ func TestQueryBuilderReusage(t *testing.T) {
 	assert.Equal(t, 20, args[1])
 }
 
-func BenchmarkPGBuilderPlain(b *testing.B) {
+func BenchmarkPGBuilder(b *testing.B) {
 	var (
 		preparedQuery query.Builder
 		sql           string
@@ -250,6 +250,7 @@ func BenchmarkPGBuilderPlain(b *testing.B) {
 			Limit(100).Offset(100)
 	}
 	preparedQuery = getPrepBuild()
+
 	b.Run("prepare query", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			preparedQuery = getPrepBuild()
