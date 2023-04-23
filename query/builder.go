@@ -3,6 +3,7 @@ package query
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/rembosk8/query-builder-go/helpers/pointer"
@@ -11,8 +12,12 @@ import (
 )
 
 const all = "*"
+const defaultTag = "db"
 
-var ErrTableNotSet = errors.New("table name not provided")
+var (
+	ErrTableNotSet = errors.New("table name not provided")
+	ErrValidation  = errors.New("invalid")
+)
 
 type Builder struct {
 	fields   []indent.Indent // select <fields>
@@ -26,14 +31,31 @@ type Builder struct {
 
 	indentBuilder *indent.Builder
 	strBuilder    *strings.Builder
+	tag           string
 }
 
-func New(indBuilder *indent.Builder) Builder {
-	if indBuilder == nil {
-		indBuilder = indent.NewBuilder()
+type BuilderOption func(b *Builder)
+
+func WithStructAnnotationTag(tag string) BuilderOption {
+	return func(b *Builder) {
+		b.tag = tag
+	}
+}
+
+func WithIndentBuilder(ib *indent.Builder) BuilderOption {
+	return func(b *Builder) {
+		b.indentBuilder = ib
+	}
+}
+
+func New(opts ...BuilderOption) Builder {
+	b := Builder{indentBuilder: indent.NewBuilder(), tag: defaultTag}
+
+	for _, o := range opts {
+		o(&b)
 	}
 
-	return Builder{indentBuilder: indBuilder}
+	return b
 }
 
 func (b Builder) Build() (sql string, args []any, err error) {
@@ -71,11 +93,58 @@ func (b Builder) From(tableName string) Builder {
 }
 
 func (b Builder) Select(fields ...string) Builder {
-	//todo: create a separate method which can extract fields tags: by fields, by the whole struct
 	for _, f := range fields {
 		b.fields = append(b.fields, b.indentBuilder.Indent(f))
 	}
 	return b
+}
+
+func (b *Builder) addFieldsFromModel(model any) {
+	rt := reflect.TypeOf(model).Elem()
+	if rt.Kind() != reflect.Struct {
+		b.err = fmt.Errorf("incorrect type of model %s: %w", rt.Kind().String(), ErrValidation)
+		return
+	}
+	for i := 0; i < rt.NumField(); i++ {
+		f, ok := rt.Field(i).Tag.Lookup(b.tag)
+		if !ok {
+			f = stringer.SnakeCase(rt.Field(i).Name)
+		}
+		b.fields = append(b.fields, b.indentBuilder.Indent(f))
+	}
+}
+
+func (b Builder) SelectV2(model any) Builder {
+	if b.err != nil {
+		return b
+	}
+	b.addFieldsFromModel(model)
+
+	return b
+}
+
+func (b Builder) Where(columnName string) wherePart {
+	return wherePart{
+		column: b.indentBuilder.Indent(columnName),
+		b:      b,
+	}
+}
+
+func (b Builder) Offset(n uint) Builder {
+	b.offset = pointer.To(n)
+	return b
+}
+
+func (b Builder) Limit(n uint) Builder {
+	b.limit = pointer.To(n)
+	return b
+}
+
+func (b Builder) OrderBy(fieldName string) orderPart {
+	return orderPart{
+		column: b.indentBuilder.Indent(fieldName),
+		b:      b,
+	}
 }
 
 func (b *Builder) initStringBuilder() {
@@ -183,30 +252,6 @@ func (b *Builder) buildPrepStatement() (args []any) {
 	b.buildLimit()
 
 	return args
-}
-
-func (b Builder) Where(columnName string) wherePart {
-	return wherePart{
-		column: b.indentBuilder.Indent(columnName),
-		b:      b,
-	}
-}
-
-func (b Builder) Offset(n uint) Builder {
-	b.offset = pointer.To(n)
-	return b
-}
-
-func (b Builder) Limit(n uint) Builder {
-	b.limit = pointer.To(n)
-	return b
-}
-
-func (b Builder) OrderBy(fieldName string) orderPart {
-	return orderPart{
-		column: b.indentBuilder.Indent(fieldName),
-		b:      b,
-	}
 }
 
 func (b *Builder) buildOrderBy() {

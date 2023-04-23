@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/rembosk8/query-builder-go/query"
 	"github.com/rembosk8/query-builder-go/query/pg"
 	"github.com/stretchr/testify/assert"
 )
@@ -229,4 +230,60 @@ func TestQueryBuilderReusage(t *testing.T) {
 	assert.Len(t, args, 2)
 	assert.Equal(t, 10, args[0])
 	assert.Equal(t, 20, args[1])
+}
+
+func TestQueryBuilderSelectV2(t *testing.T) {
+	tableName := "tableName"
+	qb := pg.NewQueryBuilder()
+
+	type tableModelWithAnnotation struct {
+		ID   string `db:"id"`
+		Name string `db:"name"`
+	}
+	m := tableModelWithAnnotation{}
+	sql, args, err := qb.SelectV2(&m).From(tableName).Build()
+	expectedSql := `SELECT "id", "name" FROM "tableName"`
+	assert.NoError(t, err)
+	assert.Equal(t, expectedSql, sql)
+	assert.Len(t, args, 0)
+
+	type tableModel struct {
+		ID   string
+		Name string
+	}
+
+	m2 := tableModel{}
+	sql, args, err = qb.SelectV2(&m2).From(tableName).Build()
+	expectedSql = `SELECT "id", "name" FROM "tableName"`
+	assert.NoError(t, err)
+	assert.Equal(t, expectedSql, sql)
+	assert.Len(t, args, 0)
+}
+
+func TestQueryBuilderSelectV2CustomTag(t *testing.T) {
+	tableName := "tableName"
+	qb := query.New(query.WithIndentBuilder(pg.IndentBuilder()), query.WithStructAnnotationTag("myTag"))
+
+	type tableModelWithAnnotation struct {
+		ID   string `myTag:"id_a"`
+		Name string `myTag:"name_a"`
+	}
+	m := tableModelWithAnnotation{}
+	sql, args, err := qb.SelectV2(&m).From(tableName).Build()
+	expectedSql := `SELECT "id_a", "name_a" FROM "tableName"`
+	assert.NoError(t, err)
+	assert.Equal(t, expectedSql, sql)
+	assert.Len(t, args, 0)
+
+	type tableModel struct {
+		ID       string
+		LastName string
+	}
+
+	m2 := tableModel{}
+	sql, args, err = qb.SelectV2(&m2).From(tableName).Build()
+	expectedSql = `SELECT "id", "last_name" FROM "tableName"`
+	assert.NoError(t, err)
+	assert.Equal(t, expectedSql, sql)
+	assert.Len(t, args, 0)
 }

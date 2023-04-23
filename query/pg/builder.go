@@ -7,10 +7,14 @@ import (
 )
 
 func NewQueryBuilder() query.Builder {
-	indentBuilder := indent.NewBuilder(
+	indentBuilder := IndentBuilder()
+
+	return query.New(query.WithIndentBuilder(indentBuilder))
+}
+
+func IndentBuilder() *indent.Builder {
+	return indent.NewBuilder(
 		indent.WithIndentSerializer(&sanitize.Indent{}),
 		indent.WithValueSerializer(&sanitize.Value{}),
 	)
-
-	return query.New(indentBuilder)
 }
