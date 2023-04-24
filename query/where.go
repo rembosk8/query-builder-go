@@ -31,34 +31,23 @@ const (
 	notBetween
 )
 
+var conditionStrings = []string{
+	eq:         "=",
+	ne:         "!=",
+	le:         "<",
+	lq:         "<=",
+	gt:         ">",
+	gq:         ">=",
+	in:         "IN",
+	notIn:      "NOT IN",
+	isNull:     "IS NULL",
+	isNotNull:  "IS NOT NULL",
+	between:    "BETWEEN",
+	notBetween: "NOT BETWEEN",
+}
+
 func (c Condition) String() string {
-	switch c {
-	case eq:
-		return "="
-	case ne:
-		return "!="
-	case le:
-		return "<"
-	case lq:
-		return "<="
-	case gt:
-		return ">"
-	case gq:
-		return ">="
-	case in:
-		return "IN"
-	case notIn:
-		return "NOT IN"
-	case isNull:
-		return "IS NULL"
-	case isNotNull:
-		return "IS NOT NULL"
-	case between:
-		return "BETWEEN"
-	case notBetween:
-		return "NOT BETWEEN"
-	}
-	panic(c)
+	return conditionStrings[c]
 }
 
 type Where struct {
