@@ -9,14 +9,14 @@ import (
 )
 
 var (
-	preparedQuery query.Builder
+	preparedQuery query.Select
 )
 
 func BenchmarkPGBuilder(b *testing.B) {
 
 	qb := pg.NewQueryBuilder()
 
-	getPrepBuild := func() query.Builder {
+	getPrepBuild := func() query.Select {
 		return qb.Select("one", "two", "three").
 			From("table 1").
 			Where("id").Equal(1).
@@ -34,13 +34,13 @@ func BenchmarkPGBuilder(b *testing.B) {
 
 	b.Run("build plain", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, _ = preparedQuery.BuildPlain()
+			_, _ = preparedQuery.ToSql()
 		}
 	})
 
 	b.Run("build with statements", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, _, _ = preparedQuery.Build()
+			_, _, _ = preparedQuery.ToSqlWithStmts()
 		}
 	})
 }
@@ -55,7 +55,7 @@ func BenchmarkReflectSelect(b *testing.B) {
 	qb := pg.NewQueryBuilder()
 	m := testModel{}
 
-	prepFunc := func(model any) query.Builder {
+	prepFunc := func(model any) query.Select {
 		return qb.SelectV2(model).
 			From("table 1").
 			Where("id").Equal(1).
@@ -64,10 +64,10 @@ func BenchmarkReflectSelect(b *testing.B) {
 			Limit(100).Offset(100)
 	}
 
-	var bdr query.Builder
+	var bdr query.Select
 	for i := 0; i < b.N; i++ {
 		bdr = prepFunc(&m)
 	}
 
-	_, _, _ = bdr.Build()
+	_, _, _ = bdr.ToSqlWithStmts()
 }

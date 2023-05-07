@@ -6,7 +6,7 @@ import (
 	"github.com/rembosk8/query-builder-go/query/pg/sanitize"
 )
 
-func NewQueryBuilder() query.Builder {
+func NewQueryBuilder() query.BaseBuilder {
 	indentBuilder := IndentBuilder()
 
 	return query.New(query.WithIndentBuilder(indentBuilder))

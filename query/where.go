@@ -9,9 +9,14 @@ import (
 	"github.com/rembosk8/query-builder-go/query/indent"
 )
 
-type wherePart struct {
+type whereAdder interface {
+	whereAdd(where *Where)
+	value(v any) indent.Value
+}
+
+type wherePart[T whereAdder] struct {
 	column indent.Indent
-	b      Builder
+	b      T
 }
 
 type Condition int16
@@ -117,78 +122,82 @@ func (w *Where) PrepStmtString(num int, wr io.Writer) ([]any, error) {
 	panic("unknown where condition")
 }
 
-func (wp wherePart) Equal(v any) Builder {
-	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: eq})
+func (wp wherePart[T]) Equal(v any) T {
+	wp.b.whereAdd(&Where{field: wp.column, value: []indent.Value{wp.b.value(v)}, cond: eq})
 	return wp.b
 }
 
-func (wp wherePart) NotEqual(v any) Builder {
-	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: ne})
+func (wp wherePart[T]) NotEqual(v any) T {
+	wp.b.whereAdd(&Where{field: wp.column, value: []indent.Value{wp.b.value(v)}, cond: ne})
 	return wp.b
 }
 
-func (wp wherePart) Less(v any) Builder {
-	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: le})
+func (wp wherePart[T]) Less(v any) T {
+	wp.b.whereAdd(&Where{field: wp.column, value: []indent.Value{wp.b.value(v)}, cond: le})
 	return wp.b
 }
 
-func (wp wherePart) LessEqual(v any) Builder {
-	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: lq})
+func (wp wherePart[T]) LessEqual(v any) T {
+	wp.b.whereAdd(&Where{field: wp.column, value: []indent.Value{wp.b.value(v)}, cond: lq})
 	return wp.b
 }
 
-func (wp wherePart) Greater(v any) Builder {
-	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: gt})
+func (wp wherePart[T]) Greater(v any) T {
+	wp.b.whereAdd(&Where{field: wp.column, value: []indent.Value{wp.b.value(v)}, cond: gt})
 	return wp.b
 }
 
-func (wp wherePart) GreaterEqual(v any) Builder {
-	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: []indent.Value{wp.b.indentBuilder.Value(v)}, cond: gq})
+func (wp wherePart[T]) GreaterEqual(v any) T {
+	wp.b.whereAdd(&Where{field: wp.column, value: []indent.Value{wp.b.value(v)}, cond: gq})
 	return wp.b
 }
 
-func (wp wherePart) In(vs ...any) Builder {
+func (wp wherePart[T]) In(vs ...any) T {
 	values := make([]indent.Value, len(vs))
 	for i := range vs {
-		values[i] = wp.b.indentBuilder.Value(vs[i])
+		values[i] = wp.b.value(vs[i])
 	}
-	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: values, cond: in})
+	wp.b.whereAdd(&Where{field: wp.column, value: values, cond: in})
 	return wp.b
 }
 
-func (wp wherePart) NotIn(vs ...any) Builder {
+func (wp wherePart[T]) NotIn(vs ...any) T {
 	values := make([]indent.Value, len(vs))
 	for i := range vs {
-		values[i] = wp.b.indentBuilder.Value(vs[i])
+		values[i] = wp.b.value(vs[i])
 	}
-	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: values, cond: notIn})
+	wp.b.whereAdd(&Where{field: wp.column, value: values, cond: notIn})
 	return wp.b
 }
 
-func (wp wherePart) IsNull() Builder {
-	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: nil, cond: isNull})
+func (wp wherePart[T]) IsNull() T {
+	wp.b.whereAdd(&Where{field: wp.column, value: nil, cond: isNull})
 	return wp.b
 }
 
-func (wp wherePart) IsNotNull() Builder {
-	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: nil, cond: isNotNull})
+func (wp wherePart[T]) IsNotNull() T {
+	wp.b.whereAdd(&Where{field: wp.column, value: nil, cond: isNotNull})
 	return wp.b
 }
 
-func (wp wherePart) Between(start, end any) Builder {
+func (wp wherePart[T]) Between(start, end any) T {
 	values := []indent.Value{
-		wp.b.indentBuilder.Value(start),
-		wp.b.indentBuilder.Value(end),
+		wp.b.value(start),
+		wp.b.value(end),
 	}
-	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: values, cond: between})
+	wp.b.whereAdd(&Where{field: wp.column, value: values, cond: between})
 	return wp.b
 }
 
-func (wp wherePart) NotBetween(start, end any) Builder {
+func (wp wherePart[T]) NotBetween(start, end any) T {
 	values := []indent.Value{
-		wp.b.indentBuilder.Value(start),
-		wp.b.indentBuilder.Value(end),
+		wp.b.value(start),
+		wp.b.value(end),
 	}
-	wp.b.wheres = append(wp.b.wheres, &Where{field: wp.column, value: values, cond: notBetween})
+	wp.b.whereAdd(&Where{field: wp.column, value: values, cond: notBetween})
 	return wp.b
+}
+
+func (wp wherePart[T]) Like() T {
+	panic("not implemented")
 }

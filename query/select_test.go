@@ -15,24 +15,13 @@ func TestPGQueryBuilder(t *testing.T) {
 
 	t.Parallel()
 
-	t.Run("not initialized builder", func(t *testing.T) {
-		sql, args, err := qb.Build()
-		assert.Empty(t, sql, "must return empty SQL when nothing is initialized")
-		assert.Nil(t, args, "must return nil for args when nothing is initialized")
-		assert.Error(t, err, "must return err")
-
-		sql, err = qb.BuildPlain()
-		assert.Empty(t, sql, "must return empty SQL when nothing is initialized")
-		assert.Error(t, err, "must return err")
-	})
-
 	t.Run("try to select all from specified table", func(t *testing.T) {
-		sql, err := qb.From(tableName).BuildPlain()
+		sql, err := qb.Select().From(tableName).ToSql()
 		expectedSql := fmt.Sprintf("SELECT * FROM \"%s\"", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.NoError(t, err)
 
-		sql, args, err := qb.From(tableName).Build()
+		sql, args, err := qb.Select().From(tableName).ToSqlWithStmts()
 		expectedSql = fmt.Sprintf("SELECT * FROM \"%s\"", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Empty(t, args, "args must be empty")
@@ -40,13 +29,13 @@ func TestPGQueryBuilder(t *testing.T) {
 	})
 
 	t.Run("try to select id from specified table", func(t *testing.T) {
-		sql, args, err := qb.Select("id").From(tableName).Build()
+		sql, args, err := qb.Select("id").From(tableName).ToSqlWithStmts()
 		expectedSql := fmt.Sprintf("SELECT \"id\" FROM \"%s\"", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Empty(t, args, "args must be empty")
 		assert.NoError(t, err)
 
-		sql, err = qb.Select("id").From(tableName).BuildPlain()
+		sql, err = qb.Select("id").From(tableName).ToSql()
 		expectedSql = fmt.Sprintf("SELECT \"id\" FROM \"%s\"", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Empty(t, args, "args must be empty")
@@ -54,13 +43,13 @@ func TestPGQueryBuilder(t *testing.T) {
 	})
 
 	t.Run("try to select multiple fields from specified table", func(t *testing.T) {
-		sql, args, err := qb.Select("id", "name", "value").From(tableName).Build()
+		sql, args, err := qb.Select("id", "name", "value").From(tableName).ToSqlWithStmts()
 		expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\"", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Empty(t, args, "args must be empty")
 		assert.NoError(t, err)
 
-		sql, err = qb.Select("id", "name", "value").From(tableName).BuildPlain()
+		sql, err = qb.Select("id", "name", "value").From(tableName).ToSql()
 		expectedSql = fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\"", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Empty(t, args, "args must be empty")
@@ -71,12 +60,12 @@ func TestPGQueryBuilder(t *testing.T) {
 		prebuild := qb.Select("id", "name", "value").
 			From(tableName).
 			Where("id").Equal(1).Where("name").Equal("testName")
-		sql, err := prebuild.BuildPlain()
+		sql, err := prebuild.ToSql()
 		expectedPlainSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" = 1 AND \"name\" = 'testName'", tableName)
 		assert.Equal(t, expectedPlainSql, sql)
 		assert.NoError(t, err)
 
-		sql, args, err := prebuild.Build()
+		sql, args, err := prebuild.ToSqlWithStmts()
 		expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" = $1 AND \"name\" = $2", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Len(t, args, 2)
@@ -92,12 +81,12 @@ func TestPGQueryBuilder(t *testing.T) {
 			Where("name").Equal("testName").
 			Offset(10).
 			Limit(5)
-		sql, err := prebuild.BuildPlain()
+		sql, err := prebuild.ToSql()
 		expectedPlainSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" = 1 AND \"name\" = 'testName' OFFSET 10 LIMIT 5", tableName)
 		assert.Equal(t, expectedPlainSql, sql)
 		assert.NoError(t, err)
 
-		sql, args, err := prebuild.Build()
+		sql, args, err := prebuild.ToSqlWithStmts()
 		expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" = $1 AND \"name\" = $2 OFFSET 10 LIMIT 5", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Len(t, args, 2)
@@ -115,7 +104,7 @@ func TestPGQueryBuilder(t *testing.T) {
 			Limit(5).
 			OrderBy("id").Desc().
 			OrderBy("name").Asc()
-		sql, err := prebuild.BuildPlain()
+		sql, err := prebuild.ToSql()
 		expectedPlainSql := fmt.Sprintf(
 			"SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" = 1 AND \"name\" = 'testName' ORDER BY \"id\" DESC, \"name\" ASC OFFSET 10 LIMIT 5",
 			tableName,
@@ -123,7 +112,7 @@ func TestPGQueryBuilder(t *testing.T) {
 		assert.Equal(t, expectedPlainSql, sql)
 		assert.NoError(t, err)
 
-		sql, args, err := prebuild.Build()
+		sql, args, err := prebuild.ToSqlWithStmts()
 		expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" = $1 AND \"name\" = $2 ORDER BY \"id\" DESC, \"name\" ASC OFFSET 10 LIMIT 5", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Len(t, args, 2)
@@ -138,7 +127,7 @@ func TestPGQueryBuilder(t *testing.T) {
 			Where("id").In(1, 2, 3).
 			Where("name").NotIn("name 1", "name 2")
 
-		sql, err := prebuild.BuildPlain()
+		sql, err := prebuild.ToSql()
 		expectedPlainSql := fmt.Sprintf(
 			"SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" IN (1, 2, 3) AND \"name\" NOT IN ('name 1', 'name 2')",
 			tableName,
@@ -146,7 +135,7 @@ func TestPGQueryBuilder(t *testing.T) {
 		assert.Equal(t, expectedPlainSql, sql)
 		assert.NoError(t, err)
 
-		sql, args, err := prebuild.Build()
+		sql, args, err := prebuild.ToSqlWithStmts()
 		expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" IN ($1, $2, $3) AND \"name\" NOT IN ($4, $5)", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Len(t, args, 5)
@@ -164,7 +153,7 @@ func TestPGQueryBuilder(t *testing.T) {
 			Where("id").IsNull().
 			Where("name").IsNotNull()
 
-		sql, err := prebuild.BuildPlain()
+		sql, err := prebuild.ToSql()
 		expectedPlainSql := fmt.Sprintf(
 			"SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" IS NULL AND \"name\" IS NOT NULL",
 			tableName,
@@ -172,7 +161,7 @@ func TestPGQueryBuilder(t *testing.T) {
 		assert.Equal(t, expectedPlainSql, sql)
 		assert.NoError(t, err)
 
-		sql, args, err := prebuild.Build()
+		sql, args, err := prebuild.ToSqlWithStmts()
 		expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" IS NULL AND \"name\" IS NOT NULL", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Len(t, args, 0)
@@ -185,7 +174,7 @@ func TestPGQueryBuilder(t *testing.T) {
 			Where("id").Between(1, 10).
 			Where("name").NotBetween("first", "second")
 
-		sql, err := prebuild.BuildPlain()
+		sql, err := prebuild.ToSql()
 		expectedPlainSql := fmt.Sprintf(
 			"SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" BETWEEN 1 AND 10 AND \"name\" NOT BETWEEN 'first' AND 'second'",
 			tableName,
@@ -193,7 +182,7 @@ func TestPGQueryBuilder(t *testing.T) {
 		assert.Equal(t, expectedPlainSql, sql)
 		assert.NoError(t, err)
 
-		sql, args, err := prebuild.Build()
+		sql, args, err := prebuild.ToSqlWithStmts()
 		expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"id\" BETWEEN $1 AND $2 AND \"name\" NOT BETWEEN $3 AND $4", tableName)
 		assert.Equal(t, expectedSql, sql)
 		assert.Len(t, args, 4)
@@ -216,14 +205,14 @@ func TestQueryBuilderReusage(t *testing.T) {
 
 	prepBuild := qb.Select("id", "name", "year").From(tableName)
 
-	sql, args, err = prepBuild.Where("first").Equal(1).Build()
+	sql, args, err = prepBuild.Where("first").Equal(1).ToSqlWithStmts()
 	expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"year\" FROM \"%s\" WHERE \"first\" = $1", tableName)
 	assert.Equal(t, expectedSql, sql)
 	assert.NoError(t, err)
 	assert.Len(t, args, 1)
 	assert.Equal(t, 1, args[0])
 
-	sql, args, err = prepBuild.Where("first2").Equal(10).Where("second").Equal(20).Build()
+	sql, args, err = prepBuild.Where("first2").Equal(10).Where("second").Equal(20).ToSqlWithStmts()
 	expectedSql = fmt.Sprintf("SELECT \"id\", \"name\", \"year\" FROM \"%s\" WHERE \"first2\" = $1 AND \"second\" = $2", tableName)
 	assert.Equal(t, expectedSql, sql)
 	assert.NoError(t, err)
@@ -241,7 +230,7 @@ func TestQueryBuilderSelectV2(t *testing.T) {
 		Name string `db:"name"`
 	}
 	m := tableModelWithAnnotation{}
-	sql, args, err := qb.SelectV2(&m).From(tableName).Build()
+	sql, args, err := qb.SelectV2(&m).From(tableName).ToSqlWithStmts()
 	expectedSql := `SELECT "id", "name" FROM "tableName"`
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSql, sql)
@@ -253,7 +242,7 @@ func TestQueryBuilderSelectV2(t *testing.T) {
 	}
 
 	m2 := tableModel{}
-	sql, args, err = qb.SelectV2(&m2).From(tableName).Build()
+	sql, args, err = qb.SelectV2(&m2).From(tableName).ToSqlWithStmts()
 	expectedSql = `SELECT "id", "name" FROM "tableName"`
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSql, sql)
@@ -269,7 +258,7 @@ func TestQueryBuilderSelectV2CustomTag(t *testing.T) {
 		Name string `myTag:"name_a"`
 	}
 	m := tableModelWithAnnotation{}
-	sql, args, err := qb.SelectV2(&m).From(tableName).Build()
+	sql, args, err := qb.SelectV2(&m).From(tableName).ToSqlWithStmts()
 	expectedSql := `SELECT "id_a", "name_a" FROM "tableName"`
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSql, sql)
@@ -281,7 +270,7 @@ func TestQueryBuilderSelectV2CustomTag(t *testing.T) {
 	}
 
 	m2 := tableModel{}
-	sql, args, err = qb.SelectV2(&m2).From(tableName).Build()
+	sql, args, err = qb.SelectV2(&m2).From(tableName).ToSqlWithStmts()
 	expectedSql = `SELECT "id", "last_name" FROM "tableName"`
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSql, sql)

@@ -15,25 +15,25 @@ const (
 
 type orderPart struct {
 	column indent.Indent
-	b      Builder
+	s      Select
 }
 
-func (op orderPart) Desc() Builder {
-	op.b.orderBys = append(op.b.orderBys, Order{
+func (op orderPart) Desc() Select {
+	op.s.orderBys = append(op.s.orderBys, Order{
 		field: op.column,
 		order: DESC,
 	})
 
-	return op.b
+	return op.s
 }
 
-func (op orderPart) Asc() Builder {
-	op.b.orderBys = append(op.b.orderBys, Order{
+func (op orderPart) Asc() Select {
+	op.s.orderBys = append(op.s.orderBys, Order{
 		field: op.column,
 		order: ASC,
 	})
 
-	return op.b
+	return op.s
 }
 
 type Order struct {
