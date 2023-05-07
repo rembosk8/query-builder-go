@@ -79,4 +79,17 @@ func TestPGUpdate(t *testing.T) {
 		require.Len(t, args, 1)
 		assert.Equal(t, args[0], 1990)
 	})
+
+	t.Run("update one field for all records with RETURNING", func(t *testing.T) {
+		sql, err := qb.Update(tableName).Set("name", "go").Returning("id", "name").ToSql()
+		expectedSql := fmt.Sprintf("UPDATE \"%s\" SET \"name\" = 'go' RETURNING \"id\", \"name\"", tableName)
+		assert.Equal(t, expectedSql, sql)
+		assert.NoError(t, err)
+
+		sql, args, err := qb.Update(tableName).Set("name", "go").Returning("id", "name").ToSqlWithStmts()
+		expectedSql = fmt.Sprintf("UPDATE \"%s\" SET \"name\" = $1 RETURNING \"id\", \"name\"", tableName)
+		assert.Equal(t, expectedSql, sql)
+		require.Len(t, args, 1)
+		assert.Equal(t, args[0], "go")
+	})
 }

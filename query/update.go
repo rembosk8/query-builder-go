@@ -73,17 +73,26 @@ func (u Update) Only() Update {
 	return u
 }
 
+func (u Update) Returning(fields ...string) Update {
+	for _, f := range fields {
+		u.returning = append(u.returning, u.field(f))
+	}
+
+	return u
+}
+
 func (u *Update) buildSqlPlain() {
 	u.buildUpdateTable()
 	u.buildSet()
 	u.buildWhere()
+	u.buildReturning()
 }
 
 func (u *Update) buildPrepStatement() (args []any) {
 	u.buildUpdateTable()
 	args = u.buildSetStmt()
 	args = u.buildWherePrepStmt(args)
-
+	u.buildReturning()
 	return
 }
 
@@ -144,4 +153,16 @@ func (u *Update) buildSetStmt() (args []any) {
 	}
 
 	return args
+}
+
+func (u *Update) buildReturning() {
+	if u.err != nil {
+		return
+	}
+
+	if len(u.returning) == 0 {
+		return
+	}
+
+	_, u.err = fmt.Fprintf(u.strBuilder, " RETURNING %s", stringer.Join(u.returning, ", "))
 }
