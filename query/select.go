@@ -142,7 +142,7 @@ func (s *Select) buildSqlPlain() {
 func (s *Select) buildPrepStatement() (args []any) {
 	s.buildSelectFrom()
 
-	args = s.buildWherePrepStmt()
+	args = s.buildWherePrepStmt(args)
 
 	s.buildOrderBy()
 	s.buildOffset()

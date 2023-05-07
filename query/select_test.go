@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPGQueryBuilder(t *testing.T) {
+func TestPGSelect(t *testing.T) {
 	tableName := "tableName"
 
 	t.Parallel()
@@ -193,7 +193,7 @@ func TestPGQueryBuilder(t *testing.T) {
 	})
 }
 
-func TestQueryBuilderReusage(t *testing.T) {
+func TestSelectReusage(t *testing.T) {
 	var (
 		sql  string
 		err  error
@@ -219,34 +219,7 @@ func TestQueryBuilderReusage(t *testing.T) {
 	assert.Equal(t, 20, args[1])
 }
 
-func TestQueryBuilderSelectV2(t *testing.T) {
-	tableName := "tableName"
-
-	type tableModelWithAnnotation struct {
-		ID   string `db:"id"`
-		Name string `db:"name"`
-	}
-	m := tableModelWithAnnotation{}
-	sql, args, err := qb.SelectV2(&m).From(tableName).ToSqlWithStmts()
-	expectedSql := `SELECT "id", "name" FROM "tableName"`
-	assert.NoError(t, err)
-	assert.Equal(t, expectedSql, sql)
-	assert.Len(t, args, 0)
-
-	type tableModel struct {
-		ID   string
-		Name string
-	}
-
-	m2 := tableModel{}
-	sql, args, err = qb.SelectV2(&m2).From(tableName).ToSqlWithStmts()
-	expectedSql = `SELECT "id", "name" FROM "tableName"`
-	assert.NoError(t, err)
-	assert.Equal(t, expectedSql, sql)
-	assert.Len(t, args, 0)
-}
-
-func TestQueryBuilderSelectV2CustomTag(t *testing.T) {
+func TestSelectV2CustomTag(t *testing.T) {
 	tableName := "tableName"
 	qb := query.New(query.WithIndentBuilder(pg.IndentBuilder()), query.WithStructAnnotationTag("myTag"))
 

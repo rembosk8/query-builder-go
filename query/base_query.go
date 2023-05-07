@@ -51,6 +51,10 @@ func (bq *baseQuery) value(v any) indent.Value {
 	return bq.indentBuilder.Value(v)
 }
 
+func (bq *baseQuery) field(f string) indent.Indent {
+	return bq.indentBuilder.Indent(f)
+}
+
 func (bq *baseQuery) buildWhere() {
 	if bq.err != nil {
 		return
@@ -61,15 +65,15 @@ func (bq *baseQuery) buildWhere() {
 	_, bq.err = fmt.Fprintf(bq.strBuilder, " WHERE %s", stringer.Join(bq.wheres, " AND ")) //todo: build AND and OR separately
 }
 
-func (bq *baseQuery) buildWherePrepStmt() []any {
+func (bq *baseQuery) buildWherePrepStmt(args []any) []any {
 	if len(bq.wheres) == 0 {
-		return nil
+		return args
 	}
 	if bq.err != nil {
 		return nil
 	}
-	var args, vals []any
-	cnt := 1
+	var vals []any
+	cnt := len(args) + 1
 
 	_, bq.err = fmt.Fprint(bq.strBuilder, " WHERE ")
 	vals, bq.err = bq.wheres[0].PrepStmtString(cnt, bq.strBuilder)
