@@ -24,3 +24,11 @@ func (v Value) String() string {
 
 	return fmt.Sprintf("%v", v.Value)
 }
+
+func (v Value) IsDefault() bool {
+	if v.sanitizer != nil {
+		return v.sanitizer.IsDefault(v.Value)
+	}
+
+	return false
+}

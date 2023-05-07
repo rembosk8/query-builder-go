@@ -67,4 +67,16 @@ func TestPGUpdate(t *testing.T) {
 		assert.Equal(t, args[0], "go")
 	})
 
+	t.Run("update to DEFAULT", func(t *testing.T) {
+		sql, err := qb.Update(tableName).Only().Set("name", "DEFAULT").Set("year", 1990).ToSql()
+		expectedSql := fmt.Sprintf("UPDATE ONLY \"%s\" SET \"name\" = DEFAULT, \"year\" = 1990", tableName)
+		assert.Equal(t, expectedSql, sql)
+		assert.NoError(t, err)
+
+		sql, args, err := qb.Update(tableName).Only().Set("name", "DEFAULT").Set("year", 1990).ToSqlWithStmts()
+		expectedSql = fmt.Sprintf("UPDATE ONLY \"%s\" SET \"name\" = DEFAULT, \"year\" = $1", tableName)
+		assert.Equal(t, expectedSql, sql)
+		require.Len(t, args, 1)
+		assert.Equal(t, args[0], 1990)
+	})
 }

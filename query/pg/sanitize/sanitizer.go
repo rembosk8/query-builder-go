@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const defaultVal = "DEFAULT" //todo: make enum value from that
+
 type Indent struct{}
 
 func (i Indent) Sanitize(val string) string {
@@ -31,7 +33,11 @@ func (v Value) Sanitize(val any) string {
 	case []byte:
 		str = QuoteBytes(x)
 	case string:
-		str = QuoteString(x)
+		if x == defaultVal {
+			str = x
+		} else {
+			str = QuoteString(x)
+		}
 	case time.Time:
 		str = x.Truncate(time.Microsecond).Format("'2006-01-02 15:04:05.999999999Z07:00:00'")
 	default:
@@ -39,6 +45,14 @@ func (v Value) Sanitize(val any) string {
 	}
 
 	return str
+}
+
+func (v Value) IsDefault(val any) bool {
+	if v, ok := val.(string); ok {
+		return v == defaultVal
+	}
+
+	return false
 }
 
 func QuoteString(str string) string {

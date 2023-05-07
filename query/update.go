@@ -7,8 +7,6 @@ import (
 	"github.com/rembosk8/query-builder-go/query/indent"
 )
 
-const defaultVal = "DEFAULT" //todo: support set to DEFAULT
-
 var _ fmt.Stringer = &filedValue{}
 
 type filedValue struct {
@@ -21,6 +19,9 @@ func (f filedValue) String() string {
 }
 
 func (f filedValue) StringStmt(i uint16) (sql string, v any) {
+	if f.value.IsDefault() {
+		return f.String(), nil
+	}
 	return fmt.Sprintf("%s = $%d", f.field.String(), i), f.value.Value
 }
 
@@ -125,13 +126,20 @@ func (u *Update) buildSetStmt() (args []any) {
 	args = make([]any, 0, len(u.fieldValue))
 
 	sql, v := u.fieldValue[0].StringStmt(num)
-	args = append(args, v)
+	if v != nil {
+		args = append(args, v)
+		num++
+	}
+
 	_, u.err = fmt.Fprintf(u.strBuilder, " SET %s", sql)
 
 	for i := 1; i < len(u.fieldValue); i++ {
-		num++
+
 		sql, v = u.fieldValue[i].StringStmt(num)
-		args = append(args, v)
+		if v != nil {
+			args = append(args, v)
+			num++
+		}
 		_, u.err = fmt.Fprintf(u.strBuilder, ", %s", sql)
 	}
 
