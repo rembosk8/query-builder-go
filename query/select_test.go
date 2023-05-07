@@ -10,7 +10,6 @@ import (
 )
 
 func TestPGQueryBuilder(t *testing.T) {
-	qb := pg.NewQueryBuilder()
 	tableName := "tableName"
 
 	t.Parallel()
@@ -200,7 +199,6 @@ func TestQueryBuilderReusage(t *testing.T) {
 		err  error
 		args []any
 	)
-	qb := pg.NewQueryBuilder()
 	tableName := "tableName"
 
 	prepBuild := qb.Select("id", "name", "year").From(tableName)
@@ -223,7 +221,6 @@ func TestQueryBuilderReusage(t *testing.T) {
 
 func TestQueryBuilderSelectV2(t *testing.T) {
 	tableName := "tableName"
-	qb := pg.NewQueryBuilder()
 
 	type tableModelWithAnnotation struct {
 		ID   string `db:"id"`
