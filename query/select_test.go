@@ -250,26 +250,29 @@ func TestQueryBuilderSelectV2CustomTag(t *testing.T) {
 	tableName := "tableName"
 	qb := query.New(query.WithIndentBuilder(pg.IndentBuilder()), query.WithStructAnnotationTag("myTag"))
 
-	type tableModelWithAnnotation struct {
-		ID   string `myTag:"id_a"`
-		Name string `myTag:"name_a"`
-	}
-	m := tableModelWithAnnotation{}
-	sql, args, err := qb.SelectV2(&m).From(tableName).ToSqlWithStmts()
-	expectedSql := `SELECT "id_a", "name_a" FROM "tableName"`
-	assert.NoError(t, err)
-	assert.Equal(t, expectedSql, sql)
-	assert.Len(t, args, 0)
+	t.Run("select v2 with custom field tag", func(t *testing.T) {
+		type tableModelWithAnnotation struct {
+			ID   string `myTag:"id_a"`
+			Name string `myTag:"name_a"`
+		}
+		m := tableModelWithAnnotation{}
+		sql, args, err := qb.SelectV2(&m).From(tableName).ToSqlWithStmts()
+		expectedSql := `SELECT "id_a", "name_a" FROM "tableName"`
+		assert.NoError(t, err)
+		assert.Equal(t, expectedSql, sql)
+		assert.Len(t, args, 0)
+	})
+	t.Run("select v2 without tags", func(t *testing.T) {
+		type tableModel struct {
+			ID       string
+			LastName string
+		}
 
-	type tableModel struct {
-		ID       string
-		LastName string
-	}
-
-	m2 := tableModel{}
-	sql, args, err = qb.SelectV2(&m2).From(tableName).ToSqlWithStmts()
-	expectedSql = `SELECT "id", "last_name" FROM "tableName"`
-	assert.NoError(t, err)
-	assert.Equal(t, expectedSql, sql)
-	assert.Len(t, args, 0)
+		m2 := tableModel{}
+		sql, args, err := qb.SelectV2(&m2).From(tableName).ToSqlWithStmts()
+		expectedSql := `SELECT "id", "last_name" FROM "tableName"`
+		assert.NoError(t, err)
+		assert.Equal(t, expectedSql, sql)
+		assert.Len(t, args, 0)
+	})
 }
