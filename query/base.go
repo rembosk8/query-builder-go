@@ -63,3 +63,11 @@ func (b BaseBuilder) Update(tableName string) Update {
 	u.setTable(tableName)
 	return u
 }
+
+func (b BaseBuilder) DeleteFrom(tableName string) Delete {
+	u := Delete{
+		baseQuery: b.bq,
+	}
+	u.setTable(tableName)
+	return u
+}
