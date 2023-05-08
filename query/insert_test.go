@@ -27,4 +27,17 @@ func TestPGInsert(t *testing.T) {
 		assert.Equal(t, args[0], "go")
 		assert.Equal(t, args[1], 1989)
 	})
+
+	t.Run("insert DEFAULT VALUES", func(t *testing.T) {
+		sql, err := qb.InsertInto(tableName).ToSql()
+		expectedSql := fmt.Sprintf("INSERT INTO \"%s\" DEFAULT VALUES", tableName)
+		assert.Equal(t, expectedSql, sql)
+		assert.NoError(t, err)
+
+		sql, args, err := qb.InsertInto(tableName).ToSqlWithStmts()
+		expectedSql = fmt.Sprintf("INSERT INTO \"%s\" DEFAULT VALUES", tableName)
+		assert.Equal(t, expectedSql, sql)
+		assert.NoError(t, err)
+		require.Len(t, args, 0)
+	})
 }

@@ -62,8 +62,20 @@ func (i *Insert) buildInsertInto() {
 	_, i.err = fmt.Fprint(i.strBuilder, "INSERT INTO ", i.table.String())
 }
 
+func (i *Insert) buildDefaultValues() {
+	_, i.err = fmt.Fprintf(
+		i.strBuilder,
+		" DEFAULT VALUES",
+	)
+}
+
 func (i *Insert) buildValues() {
 	if i.err != nil {
+		return
+	}
+
+	if len(i.fields) == 0 {
+		i.buildDefaultValues()
 		return
 	}
 
@@ -77,6 +89,11 @@ func (i *Insert) buildValues() {
 
 func (i *Insert) buildValueStmts() (args []any) {
 	if i.err != nil {
+		return
+	}
+
+	if len(i.fields) == 0 {
+		i.buildDefaultValues()
 		return
 	}
 
