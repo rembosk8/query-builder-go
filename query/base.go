@@ -71,3 +71,11 @@ func (b BaseBuilder) DeleteFrom(tableName string) Delete {
 	u.setTable(tableName)
 	return u
 }
+
+func (b BaseBuilder) InsertInto(tableName string) Insert {
+	i := Insert{
+		baseQuery: b.bq,
+	}
+	i.setTable(tableName)
+	return i
+}

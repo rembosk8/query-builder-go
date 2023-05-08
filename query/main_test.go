@@ -8,7 +8,9 @@ import (
 	"github.com/rembosk8/query-builder-go/query/pg"
 )
 
-var qb query.BaseBuilder
+var (
+	qb query.BaseBuilder
+)
 
 func TestMain(m *testing.M) {
 	qb = pg.NewQueryBuilder()
