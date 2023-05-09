@@ -73,6 +73,23 @@ func TestPGSelect(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("try to select multiple fields from specified table with WHERE", func(t *testing.T) {
+		prebuild := qb.Select("id", "name", "value").
+			From(tableName).
+			Where("name").Like("Mike%")
+		sql, err := prebuild.ToSql()
+		expectedPlainSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"name\" LIKE 'Mike%%'", tableName)
+		assert.Equal(t, expectedPlainSql, sql)
+		assert.NoError(t, err)
+
+		sql, args, err := prebuild.ToSqlWithStmts()
+		expectedSql := fmt.Sprintf("SELECT \"id\", \"name\", \"value\" FROM \"%s\" WHERE \"name\" LIKE $1", tableName)
+		assert.Equal(t, expectedSql, sql)
+		assert.Len(t, args, 1)
+		assert.Equal(t, "Mike%", args[0])
+		assert.NoError(t, err)
+	})
+
 	t.Run("select with TOP and LIMIT", func(t *testing.T) {
 		prebuild := qb.Select("id", "name", "value").
 			From(tableName).

@@ -1,5 +1,46 @@
 # query-builder-go
-SQL Query Bulder for golang which helps to build SQL request dynamically
+SQL Query Builder for golang which helps to build SQL requests dynamically.
+The goal for the first release is to support all common operations with rows for PostgreSQL, 
+such as SELECT, INSERT, UPDATE, DELETE. 
+
+Support of filtering with WHERE(AND), OFFSET, LIMIT, ORDER BY.
+
+SQL Query Builder could provides 2 different result:
+- Plain SQL request
+```
+INSERT INTO "example_table" ("name", "year") VALUES ('John', 1989)
+```
+- SQL request with placeholders + list of arguments for the placeholders.
+```
+Generated SQL with placeholders request: 
+INSERT INTO "example_table" ("name", "year") VALUES ($1, $2)
+
+List of arguments for placeholders: 
+"John" "1989"
+```
+
+## Where [example](query/where_test.go)
+Support the following operators:
+
+```go
+	prepQuery := qb.Select().From("example_table")
+
+	prepQueryWithWhere := prepQuery.
+		Where("name").Equal("Max").
+		Where("last_name").NotEqual("Brown").
+		Where("year").Between(1990, 2023).
+		Where("year").NotBetween(2000, 2010).
+		Where("salary").Less(2000).
+		Where("salary").Greater(1000).
+		Where("days").GreaterEqual(10).
+		Where("days").LessEqual(30).
+		Where("department").In("HR", "Development").
+		Where("position").NotIn("junior", "middle").
+		Where("referral").IsNull().
+		Where("lead").IsNotNull().
+		Where("comment").Like("%something interesting%").
+		Where("comment").NotLike("%something not interesting%")
+```
 
 # Examples
 

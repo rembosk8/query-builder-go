@@ -34,6 +34,8 @@ const (
 	isNotNull
 	between
 	notBetween
+	like
+	notLike
 )
 
 var conditionStrings = []string{
@@ -49,6 +51,8 @@ var conditionStrings = []string{
 	isNotNull:  "IS NOT NULL",
 	between:    "BETWEEN",
 	notBetween: "NOT BETWEEN",
+	like:       "LIKE",
+	notLike:    "NOT LIKE",
 }
 
 func (c Condition) String() string {
@@ -63,7 +67,7 @@ type Where struct {
 
 func (w *Where) String() string {
 	switch w.cond {
-	case eq, ne, le, lq, gt, gq:
+	case eq, ne, le, lq, gt, gq, like, notLike:
 		return fmt.Sprintf("%s %s %s", w.field.String(), w.cond.String(), w.value[0].String())
 	case in, notIn:
 		return fmt.Sprintf("%s %s (%s)", w.field.String(), w.cond.String(), stringer.Join(w.value, ", "))
@@ -83,7 +87,7 @@ func (w *Where) PrepStmtString(num int, wr io.Writer) ([]any, error) {
 	}
 
 	switch w.cond {
-	case eq, ne, le, lq, gt, gq:
+	case eq, ne, le, lq, gt, gq, like, notLike:
 		if _, err := fmt.Fprintf(wr, "%s %s $%d", w.field.String(), w.cond.String(), num); err != nil {
 			return nil, fmt.Errorf("write into writer: %w", err)
 		}
@@ -198,6 +202,12 @@ func (wp wherePart[T]) NotBetween(start, end any) T {
 	return wp.b
 }
 
-func (wp wherePart[T]) Like() T {
-	panic("not implemented")
+func (wp wherePart[T]) Like(pattern string) T {
+	wp.b.whereAdd(&Where{field: wp.column, value: []indent.Value{wp.b.value(pattern)}, cond: like})
+	return wp.b
+}
+
+func (wp wherePart[T]) NotLike(pattern string) T {
+	wp.b.whereAdd(&Where{field: wp.column, value: []indent.Value{wp.b.value(pattern)}, cond: notLike})
+	return wp.b
 }
