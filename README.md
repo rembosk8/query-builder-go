@@ -1,18 +1,18 @@
 # query-builder-go
-SQL Query Builder for golang which helps to build SQL requests dynamically.
+SQL Query Builder for golang which helps to build SQL queries dynamically.
 The goal for the first release is to support all common operations with rows for PostgreSQL, 
 such as SELECT, INSERT, UPDATE, DELETE. 
 
 Support of filtering with WHERE(AND), OFFSET, LIMIT, ORDER BY.
 
 SQL Query Builder could provides 2 different result:
-- Plain SQL request
+- Plain SQL query
 ```
 INSERT INTO "example_table" ("name", "year") VALUES ('John', 1989)
 ```
-- SQL request with placeholders + list of arguments for the placeholders.
+- SQL query with placeholders + list of arguments for the placeholders.
 ```
-Generated SQL with placeholders request: 
+Generated SQL with placeholders query: 
 INSERT INTO "example_table" ("name", "year") VALUES ($1, $2)
 
 List of arguments for placeholders: 
@@ -76,7 +76,7 @@ func sel() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Generated SQL plain request: ")
+	fmt.Println("Generated SQL plain query: ")
 	fmt.Println(sql)
 
 	sql, args, err := prepQuery.ToSqlWithStmts()
@@ -84,7 +84,7 @@ func sel() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Generated SQL with placeholders request: ")
+	fmt.Println("Generated SQL with placeholders query: ")
 	fmt.Println(sql)
 
 	fmt.Println("List of arguments for placeholders: ")
@@ -93,10 +93,10 @@ func sel() {
 ```
 ### Output
 ```
-Generated SQL plain request: 
+Generated SQL plain query: 
 SELECT "id", "name", "year" FROM "example_table" WHERE "year" BETWEEN 1990 AND 2023 AND "name" = 'Max' ORDER BY "year" DESC OFFSET 200 LIMIT 100
 
-Generated SQL with placeholders request: 
+Generated SQL with placeholders query: 
 SELECT "id", "name", "year" FROM "example_table" WHERE "year" BETWEEN $1 AND $2 AND "name" = $3 ORDER BY "year" DESC OFFSET 200 LIMIT 100
 
 List of arguments for placeholders: 
@@ -119,7 +119,7 @@ func update() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Generated SQL plain request: ")
+	fmt.Println("Generated SQL plain query: ")
 	fmt.Println(sql)
 
 	sql, args, err := prepQuery.ToSqlWithStmts()
@@ -127,7 +127,7 @@ func update() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Generated SQL with placeholders request: ")
+	fmt.Println("Generated SQL with placeholders query: ")
 	fmt.Println(sql)
 
 	fmt.Println("List of arguments for placeholders: ")
@@ -136,10 +136,10 @@ func update() {
 ```
 ### Output
 ```
-Generated SQL plain request: 
+Generated SQL plain query: 
 UPDATE "example_table" SET "name" = 'John', "updated_at" = '2023-05-08 18:13:41.062736+03:00:00' WHERE "name" = 'Jjjohn' RETURNING "id"
 
-Generated SQL with placeholders request: 
+Generated SQL with placeholders query: 
 UPDATE "example_table" SET "name" = $1, "updated_at" = $2 WHERE "name" = $3 RETURNING "id"
 
 List of arguments for placeholders: 
@@ -160,7 +160,7 @@ func del() {
         log.Fatal(err)
     }
     
-    fmt.Println("Generated SQL plain request: ")
+    fmt.Println("Generated SQL plain query: ")
     fmt.Println(sql)
     
     sql, args, err := prepQuery.ToSqlWithStmts()
@@ -168,7 +168,7 @@ func del() {
         log.Fatal(err)
     }
     
-    fmt.Println("Generated SQL with placeholders request: ")
+    fmt.Println("Generated SQL with placeholders query: ")
     fmt.Println(sql)
     
     fmt.Println("List of arguments for placeholders: ")
@@ -177,10 +177,10 @@ func del() {
 ```
 ### Output
 ```
-Generated SQL plain request: 
+Generated SQL plain query: 
 DELETE FROM "example_table" WHERE "year" != 1990 RETURNING "id"
 
-Generated SQL with placeholders request: 
+Generated SQL with placeholders query: 
 DELETE FROM "example_table" WHERE "year" != $1 RETURNING "id"
 
 List of arguments for placeholders: 
@@ -200,7 +200,7 @@ func insert() {
         log.Fatal(err)
     }
     
-    fmt.Println("Generated SQL plain request: ")
+    fmt.Println("Generated SQL plain query: ")
     fmt.Println(sql)
     
     sql, args, err := prepQuery.ToSqlWithStmts()
@@ -208,7 +208,7 @@ func insert() {
         log.Fatal(err)
     }
     
-    fmt.Println("Generated SQL with placeholders request: ")
+    fmt.Println("Generated SQL with placeholders query: ")
     fmt.Println(sql)
     
     fmt.Println("List of arguments for placeholders: ")
@@ -217,10 +217,10 @@ func insert() {
 ```
 ### Output
 ```
-Generated SQL plain request: 
+Generated SQL plain query: 
 INSERT INTO "example_table" ("name", "year") VALUES ('John', 1989)
 
-Generated SQL with placeholders request: 
+Generated SQL with placeholders query: 
 INSERT INTO "example_table" ("name", "year") VALUES ($1, $2)
 
 List of arguments for placeholders: 
