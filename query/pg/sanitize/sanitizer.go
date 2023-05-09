@@ -8,7 +8,19 @@ import (
 	"time"
 )
 
-const defaultVal = "DEFAULT" //todo: make enum value from that
+// notSanitazableSet
+//
+//	 set of strings which contains standard Postgres functions and names
+//		which must not be sanitized
+var standardNames = map[string]struct{}{
+	"default": {},
+	"now()":   {},
+}
+
+func isStandardName(v string) bool {
+	_, ok := standardNames[strings.ToLower(v)]
+	return ok
+}
 
 type Indent struct{}
 
@@ -33,8 +45,8 @@ func (v Value) Sanitize(val any) string {
 	case []byte:
 		str = QuoteBytes(x)
 	case string:
-		if x == defaultVal {
-			str = x
+		if isStandardName(x) {
+			str = strings.ToUpper(x)
 		} else {
 			str = QuoteString(x)
 		}
@@ -47,9 +59,9 @@ func (v Value) Sanitize(val any) string {
 	return str
 }
 
-func (v Value) IsDefault(val any) bool {
+func (v Value) IsStandard(val any) bool {
 	if v, ok := val.(string); ok {
-		return v == defaultVal
+		return isStandardName(v)
 	}
 
 	return false

@@ -51,6 +51,16 @@ func TestValue_Sanitize(t *testing.T) {
 			val:  32,
 			want: "32",
 		},
+		{
+			name: "not sanitazible DEFAULT",
+			val:  "DEFAULT",
+			want: "DEFAULT",
+		},
+		{
+			name: "not sanitazible NOW()",
+			val:  "NoW()",
+			want: "NOW()",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

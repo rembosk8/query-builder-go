@@ -25,9 +25,9 @@ func (v Value) String() string {
 	return fmt.Sprintf("%v", v.Value)
 }
 
-func (v Value) IsDefault() bool {
+func (v Value) IsStandard() bool {
 	if v.sanitizer != nil {
-		return v.sanitizer.IsDefault(v.Value)
+		return v.sanitizer.IsStandard(v.Value)
 	}
 
 	return false

@@ -19,7 +19,7 @@ func (f filedValue) String() string {
 }
 
 func (f filedValue) StringStmt(i uint16) (sql string, v any) {
-	if f.value.IsDefault() {
+	if f.value.IsStandard() {
 		return f.String(), nil
 	}
 	return fmt.Sprintf("%s = $%d", f.field.String(), i), f.value.Value

@@ -6,5 +6,5 @@ type Sanitizer interface {
 
 type ValueSanitizer interface {
 	Sanitize(v any) string
-	IsDefault(v any) bool
+	IsStandard(v any) bool
 }

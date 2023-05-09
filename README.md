@@ -42,6 +42,9 @@ Support the following operators:
 		Where("comment").NotLike("%something not interesting%")
 ```
 
+## Insert
+Generate query for INSERT without any values is going to generate `INSERT INTO <tablename> DEFAULT VALUES` 
+
 # Examples
 
 ## Select [example.go](examples/pg/select.go)
