@@ -3,7 +3,7 @@ package query
 import (
 	"fmt"
 
-	"github.com/rembosk8/query-builder-go/query/indent"
+	"github.com/rembosk8/query-builder-go/query/identity"
 )
 
 type OrderType uint8
@@ -14,7 +14,7 @@ const (
 )
 
 type orderPart struct {
-	column indent.Indent
+	column identity.Identity
 	s      Select
 }
 
@@ -37,7 +37,7 @@ func (op orderPart) Asc() Select {
 }
 
 type Order struct {
-	field indent.Indent
+	field identity.Identity
 	order OrderType
 }
 

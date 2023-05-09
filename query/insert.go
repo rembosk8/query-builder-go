@@ -6,14 +6,14 @@ import (
 	"strings"
 
 	"github.com/rembosk8/query-builder-go/helpers/stringer"
-	"github.com/rembosk8/query-builder-go/query/indent"
+	"github.com/rembosk8/query-builder-go/query/identity"
 )
 
 type Insert struct {
 	baseQuery
 
-	fields []indent.Indent
-	values []indent.Value
+	fields []identity.Identity
+	values []identity.Value
 }
 
 var _ sqler = &Insert{}
@@ -37,7 +37,7 @@ func (i Insert) ToSqlWithStmts() (sql string, args []any, err error) {
 }
 
 func (i Insert) Set(field string, value any) Insert {
-	i.fields = append(i.fields, i.field(field))
+	i.fields = append(i.fields, i.indend(field))
 	i.values = append(i.values, i.value(value))
 
 	return i

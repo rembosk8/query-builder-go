@@ -6,7 +6,7 @@ import (
 
 	"github.com/rembosk8/query-builder-go/helpers/pointer"
 	"github.com/rembosk8/query-builder-go/helpers/stringer"
-	"github.com/rembosk8/query-builder-go/query/indent"
+	"github.com/rembosk8/query-builder-go/query/identity"
 )
 
 type sqler interface {
@@ -18,12 +18,12 @@ type sqler interface {
 }
 
 type baseQuery struct {
-	table  *indent.Indent // from <table>
+	table  *identity.Identity // from <table>
 	wheres []*Where
 
 	err error
 
-	indentBuilder *indent.Builder
+	indentBuilder *identity.Builder
 	strBuilder    *strings.Builder
 	tag           string
 }
@@ -47,11 +47,11 @@ func (bq *baseQuery) whereAdd(w *Where) {
 	bq.wheres = append(bq.wheres, w)
 }
 
-func (bq *baseQuery) value(v any) indent.Value {
+func (bq *baseQuery) value(v any) identity.Value {
 	return bq.indentBuilder.Value(v)
 }
 
-func (bq *baseQuery) field(f string) indent.Indent {
+func (bq *baseQuery) indend(f string) identity.Identity {
 	return bq.indentBuilder.Indent(f)
 }
 

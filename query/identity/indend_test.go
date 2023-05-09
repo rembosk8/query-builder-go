@@ -1,4 +1,4 @@
-package indent
+package identity
 
 import (
 	"fmt"

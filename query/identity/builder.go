@@ -1,4 +1,4 @@
-package indent
+package identity
 
 type Builder struct {
 	indentSanitizer Sanitizer
@@ -15,11 +15,11 @@ func NewBuilder(opts ...BuilderOption) *Builder {
 	return b
 }
 
-func (b *Builder) Indent(name string) Indent {
+func (b *Builder) Indent(name string) Identity {
 	if b.indentSanitizer != nil {
 		name = b.indentSanitizer.Sanitize(name)
 	}
-	return Indent(name)
+	return Identity(name)
 }
 
 func (b *Builder) Value(val any) Value {

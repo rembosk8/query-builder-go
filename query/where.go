@@ -6,16 +6,16 @@ import (
 	"strings"
 
 	"github.com/rembosk8/query-builder-go/helpers/stringer"
-	"github.com/rembosk8/query-builder-go/query/indent"
+	"github.com/rembosk8/query-builder-go/query/identity"
 )
 
 type whereAdder interface {
 	whereAdd(where *Where)
-	value(v any) indent.Value
+	value(v any) identity.Value
 }
 
 type wherePart[T whereAdder] struct {
-	column indent.Indent
+	column identity.Identity
 	b      T
 }
 
@@ -60,8 +60,8 @@ func (c Condition) String() string {
 }
 
 type Where struct {
-	field indent.Indent
-	value []indent.Value
+	field identity.Identity
+	value []identity.Value
 	cond  Condition
 }
 
@@ -127,37 +127,37 @@ func (w *Where) PrepStmtString(num int, wr io.Writer) ([]any, error) {
 }
 
 func (wp wherePart[T]) Equal(v any) T {
-	wp.b.whereAdd(&Where{field: wp.column, value: []indent.Value{wp.b.value(v)}, cond: eq})
+	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: eq})
 	return wp.b
 }
 
 func (wp wherePart[T]) NotEqual(v any) T {
-	wp.b.whereAdd(&Where{field: wp.column, value: []indent.Value{wp.b.value(v)}, cond: ne})
+	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: ne})
 	return wp.b
 }
 
 func (wp wherePart[T]) Less(v any) T {
-	wp.b.whereAdd(&Where{field: wp.column, value: []indent.Value{wp.b.value(v)}, cond: le})
+	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: le})
 	return wp.b
 }
 
 func (wp wherePart[T]) LessEqual(v any) T {
-	wp.b.whereAdd(&Where{field: wp.column, value: []indent.Value{wp.b.value(v)}, cond: lq})
+	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: lq})
 	return wp.b
 }
 
 func (wp wherePart[T]) Greater(v any) T {
-	wp.b.whereAdd(&Where{field: wp.column, value: []indent.Value{wp.b.value(v)}, cond: gt})
+	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: gt})
 	return wp.b
 }
 
 func (wp wherePart[T]) GreaterEqual(v any) T {
-	wp.b.whereAdd(&Where{field: wp.column, value: []indent.Value{wp.b.value(v)}, cond: gq})
+	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: gq})
 	return wp.b
 }
 
 func (wp wherePart[T]) In(vs ...any) T {
-	values := make([]indent.Value, len(vs))
+	values := make([]identity.Value, len(vs))
 	for i := range vs {
 		values[i] = wp.b.value(vs[i])
 	}
@@ -166,7 +166,7 @@ func (wp wherePart[T]) In(vs ...any) T {
 }
 
 func (wp wherePart[T]) NotIn(vs ...any) T {
-	values := make([]indent.Value, len(vs))
+	values := make([]identity.Value, len(vs))
 	for i := range vs {
 		values[i] = wp.b.value(vs[i])
 	}
@@ -185,7 +185,7 @@ func (wp wherePart[T]) IsNotNull() T {
 }
 
 func (wp wherePart[T]) Between(start, end any) T {
-	values := []indent.Value{
+	values := []identity.Value{
 		wp.b.value(start),
 		wp.b.value(end),
 	}
@@ -194,7 +194,7 @@ func (wp wherePart[T]) Between(start, end any) T {
 }
 
 func (wp wherePart[T]) NotBetween(start, end any) T {
-	values := []indent.Value{
+	values := []identity.Value{
 		wp.b.value(start),
 		wp.b.value(end),
 	}
@@ -203,11 +203,11 @@ func (wp wherePart[T]) NotBetween(start, end any) T {
 }
 
 func (wp wherePart[T]) Like(pattern string) T {
-	wp.b.whereAdd(&Where{field: wp.column, value: []indent.Value{wp.b.value(pattern)}, cond: like})
+	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(pattern)}, cond: like})
 	return wp.b
 }
 
 func (wp wherePart[T]) NotLike(pattern string) T {
-	wp.b.whereAdd(&Where{field: wp.column, value: []indent.Value{wp.b.value(pattern)}, cond: notLike})
+	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(pattern)}, cond: notLike})
 	return wp.b
 }

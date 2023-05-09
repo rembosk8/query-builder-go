@@ -1,12 +1,12 @@
-package indent
+package identity
 
 import (
 	"fmt"
 )
 
-type Indent string
+type Identity string
 
-func (s Indent) String() string {
+func (s Identity) String() string {
 	return string(s)
 }
 

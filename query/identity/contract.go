@@ -1,4 +1,4 @@
-package indent
+package identity
 
 type Sanitizer interface {
 	Sanitize(v string) string

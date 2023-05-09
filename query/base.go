@@ -1,6 +1,6 @@
 package query
 
-import "github.com/rembosk8/query-builder-go/query/indent"
+import "github.com/rembosk8/query-builder-go/query/identity"
 
 const defaultTag = "db"
 const all = "*"
@@ -17,14 +17,14 @@ func WithStructAnnotationTag(tag string) Option {
 	}
 }
 
-func WithIndentBuilder(ib *indent.Builder) Option {
+func WithIdentityBuilder(ib *identity.Builder) Option {
 	return func(b *baseQuery) {
 		b.indentBuilder = ib
 	}
 }
 
 func New(opts ...Option) BaseBuilder {
-	b := baseQuery{indentBuilder: indent.NewBuilder(), tag: defaultTag}
+	b := baseQuery{indentBuilder: identity.NewBuilder(), tag: defaultTag}
 
 	for _, o := range opts {
 		o(&b)

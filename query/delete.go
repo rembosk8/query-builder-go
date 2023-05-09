@@ -4,13 +4,13 @@ import (
 	"fmt"
 
 	"github.com/rembosk8/query-builder-go/helpers/stringer"
-	"github.com/rembosk8/query-builder-go/query/indent"
+	"github.com/rembosk8/query-builder-go/query/identity"
 )
 
 type Delete struct {
 	baseQuery
 	only      bool
-	returning []indent.Indent
+	returning []identity.Identity
 }
 
 var _ sqler = &Delete{}
@@ -40,14 +40,14 @@ func (d Delete) Only() Delete {
 
 func (d Delete) Where(field string) wherePart[*Delete] {
 	return wherePart[*Delete]{
-		column: d.field(field),
+		column: d.indend(field),
 		b:      &d,
 	}
 }
 
 func (d Delete) Returning(fields ...string) Delete {
 	for _, f := range fields {
-		d.returning = append(d.returning, d.field(f))
+		d.returning = append(d.returning, d.indend(f))
 	}
 
 	return d

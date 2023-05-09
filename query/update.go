@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	"github.com/rembosk8/query-builder-go/helpers/stringer"
-	"github.com/rembosk8/query-builder-go/query/indent"
+	"github.com/rembosk8/query-builder-go/query/identity"
 )
 
 var _ fmt.Stringer = &filedValue{}
 
 type filedValue struct {
-	field indent.Indent
-	value indent.Value
+	field identity.Identity
+	value identity.Value
 }
 
 func (f filedValue) String() string {
@@ -29,7 +29,7 @@ type Update struct {
 	baseQuery
 
 	fieldValue []filedValue
-	returning  []indent.Indent
+	returning  []identity.Identity
 	only       bool
 }
 
@@ -55,7 +55,7 @@ func (u Update) ToSqlWithStmts() (sql string, args []any, err error) {
 
 func (u Update) Set(field string, value any) Update {
 	u.fieldValue = append(u.fieldValue, filedValue{
-		field: u.field(field),
+		field: u.indend(field),
 		value: u.value(value),
 	})
 	return u
@@ -63,7 +63,7 @@ func (u Update) Set(field string, value any) Update {
 
 func (u Update) Where(columnName string) wherePart[*Update] {
 	return wherePart[*Update]{
-		column: u.field(columnName),
+		column: u.indend(columnName),
 		b:      &u,
 	}
 }
@@ -75,7 +75,7 @@ func (u Update) Only() Update {
 
 func (u Update) Returning(fields ...string) Update {
 	for _, f := range fields {
-		u.returning = append(u.returning, u.field(f))
+		u.returning = append(u.returning, u.indend(f))
 	}
 
 	return u

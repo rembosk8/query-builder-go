@@ -73,7 +73,7 @@ func TestPGSelect(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("try to select multiple fields from specified table with WHERE", func(t *testing.T) {
+	t.Run("try to select multiple fields from specified table with WHERE LIKE", func(t *testing.T) {
 		prebuild := qb.Select("id", "name", "value").
 			From(tableName).
 			Where("name").Like("Mike%")
@@ -208,6 +208,39 @@ func TestPGSelect(t *testing.T) {
 		assert.Equal(t, "second", args[3])
 		assert.NoError(t, err)
 	})
+
+	t.Run("try to select with JOIN", func(t *testing.T) {
+		joinTable1 := "join_tbl_1"
+		joinTable2 := "join_tbl_2"
+		prebuild := qb.Select().
+			From(tableName).
+			Join(joinTable1).On(tableName, "id", joinTable1, "id").
+			RightJoin(joinTable2).Using("key")
+		sql, err := prebuild.ToSql()
+		expectedPlainSql := fmt.Sprintf(
+			"SELECT * FROM \"%s\" JOIN \"%s\" ON \"%s\".\"id\" = \"%s\".\"id\" RIGHT JOIN \"%s\" USING (\"key\")",
+			tableName,
+			joinTable1,
+			tableName,
+			joinTable1,
+			joinTable2,
+		)
+		assert.Equal(t, expectedPlainSql, sql)
+		assert.NoError(t, err)
+
+		sql, args, err := prebuild.ToSqlWithStmts()
+		expectedSql := fmt.Sprintf(
+			"SELECT * FROM \"%s\" JOIN \"%s\" ON \"%s\".\"id\" = \"%s\".\"id\" RIGHT JOIN \"%s\" USING (\"key\")",
+			tableName,
+			joinTable1,
+			tableName,
+			joinTable1,
+			joinTable2,
+		)
+		assert.Equal(t, expectedSql, sql)
+		assert.NoError(t, err)
+		assert.Len(t, args, 0)
+	})
 }
 
 func TestSelectReusage(t *testing.T) {
@@ -238,9 +271,9 @@ func TestSelectReusage(t *testing.T) {
 
 func TestSelectV2CustomTag(t *testing.T) {
 	tableName := "tableName"
-	qb := query.New(query.WithIndentBuilder(pg.IndentBuilder()), query.WithStructAnnotationTag("myTag"))
+	qb := query.New(query.WithIdentityBuilder(pg.IndentBuilder()), query.WithStructAnnotationTag("myTag"))
 
-	t.Run("select v2 with custom field tag", func(t *testing.T) {
+	t.Run("select v2 with custom indend tag", func(t *testing.T) {
 		type tableModelWithAnnotation struct {
 			ID   string `myTag:"id_a"`
 			Name string `myTag:"name_a"`

@@ -13,7 +13,7 @@ func TestPGUpdate(t *testing.T) {
 
 	t.Parallel()
 
-	t.Run("update one field for all records", func(t *testing.T) {
+	t.Run("update one indend for all records", func(t *testing.T) {
 		sql, err := qb.Update(tableName).Set("name", "go").ToSql()
 		expectedSql := fmt.Sprintf("UPDATE \"%s\" SET \"name\" = 'go'", tableName)
 		assert.Equal(t, expectedSql, sql)
@@ -42,7 +42,7 @@ func TestPGUpdate(t *testing.T) {
 		assert.Equal(t, args[1], 1989)
 	})
 
-	t.Run("update one field WHERE", func(t *testing.T) {
+	t.Run("update one indend WHERE", func(t *testing.T) {
 		sql, err := qb.Update(tableName).Set("name", "go").Where("year").Equal(1989).ToSql()
 		expectedSql := fmt.Sprintf("UPDATE \"%s\" SET \"name\" = 'go' WHERE \"year\" = 1989", tableName)
 		assert.Equal(t, expectedSql, sql)
@@ -85,7 +85,7 @@ func TestPGUpdate(t *testing.T) {
 		assert.Equal(t, args[0], 1990)
 	})
 
-	t.Run("update one field for all records with RETURNING", func(t *testing.T) {
+	t.Run("update one indend for all records with RETURNING", func(t *testing.T) {
 		sql, err := qb.Update(tableName).Set("name", "go").Returning("id", "name").ToSql()
 		expectedSql := fmt.Sprintf("UPDATE \"%s\" SET \"name\" = 'go' RETURNING \"id\", \"name\"", tableName)
 		assert.Equal(t, expectedSql, sql)

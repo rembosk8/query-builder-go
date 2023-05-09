@@ -6,7 +6,7 @@ import (
 
 	"github.com/rembosk8/query-builder-go/helpers/pointer"
 	"github.com/rembosk8/query-builder-go/helpers/stringer"
-	"github.com/rembosk8/query-builder-go/query/indent"
+	"github.com/rembosk8/query-builder-go/query/identity"
 )
 
 var _ sqler = &Select{}
@@ -14,10 +14,12 @@ var _ sqler = &Select{}
 type Select struct {
 	baseQuery
 
-	fields   []indent.Indent // select <fields>
+	fields   []identity.Identity // select <fields>
 	offset   *uint
 	limit    *uint
 	orderBys []Order
+
+	joins []*Join
 }
 
 func (s Select) ToSql() (sql string, err error) {
@@ -41,6 +43,32 @@ func (s Select) ToSqlWithStmts() (sql string, args []any, err error) {
 func (s Select) From(tableName string) Select {
 	s.setTable(tableName)
 	return s
+}
+
+func (s Select) join(jt joinType, tableName string) joinPart {
+	return joinPart{
+		j: Join{
+			t:         jt,
+			joinTable: s.indend(tableName),
+		},
+		s: s,
+	}
+}
+
+func (s Select) Join(tableName string) joinPart {
+	return s.join(inner, tableName)
+}
+
+func (s Select) RightJoin(tableName string) joinPart {
+	return s.join(right, tableName)
+}
+
+func (s Select) LeftJoin(tableName string) joinPart {
+	return s.join(left, tableName)
+}
+
+func (s Select) FullJoin(tableName string) joinPart {
+	return s.join(full, tableName)
 }
 
 func (s Select) Where(columnName string) wherePart[*Select] {
@@ -90,12 +118,23 @@ func (s *Select) getFields() string {
 	return stringer.Join(s.fields, ", ")
 }
 
+func (s *Select) addJoin(j *Join) {
+	s.joins = append(s.joins, j)
+}
+
 func (s *Select) buildSelectFrom() {
 	if s.err != nil {
 		return
 	}
 
 	_, s.err = fmt.Fprintf(s.strBuilder, "SELECT %s FROM %s", s.getFields(), s.table.String())
+	for _, j := range s.joins {
+		if s.err != nil {
+			return
+		}
+		_, s.err = fmt.Fprint(s.strBuilder, j.String())
+	}
+
 }
 
 func (s *Select) buildOffset() {
