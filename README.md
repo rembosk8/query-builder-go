@@ -19,7 +19,7 @@ List of arguments for placeholders:
 "John" "1989"
 ```
 
-## Where [example](query/where_test.go)
+## Where [example](internal/query/where_test.go)
 Support the following operators:
 
 ```go
@@ -71,7 +71,7 @@ func sel() {
 		Offset(200).
 		OrderBy("year").Desc()
 
-	sql, err := prepQuery.ToSql()
+	sql, err := prepQuery.ToSQL()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func sel() {
 	fmt.Println("Generated SQL plain query: ")
 	fmt.Println(sql)
 
-	sql, args, err := prepQuery.ToSqlWithStmts()
+	sql, args, err := prepQuery.ToSQLWithStmts()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func update() {
 		Where("name").Equal("Jjjohn").
 		Returning("id")
 
-	sql, err := prepQuery.ToSql()
+	sql, err := prepQuery.ToSQL()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -122,7 +122,7 @@ func update() {
 	fmt.Println("Generated SQL plain query: ")
 	fmt.Println(sql)
 
-	sql, args, err := prepQuery.ToSqlWithStmts()
+	sql, args, err := prepQuery.ToSQLWithStmts()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -155,7 +155,7 @@ func del() {
         Where("year").NotEqual(1990).
         Returning("id")
     
-    sql, err := prepQuery.ToSql()
+    sql, err := prepQuery.ToSQL()
     if err != nil {
         log.Fatal(err)
     }
@@ -163,7 +163,7 @@ func del() {
     fmt.Println("Generated SQL plain query: ")
     fmt.Println(sql)
     
-    sql, args, err := prepQuery.ToSqlWithStmts()
+    sql, args, err := prepQuery.ToSQLWithStmts()
     if err != nil {
         log.Fatal(err)
     }
@@ -195,7 +195,7 @@ func insert() {
         Set("name", "John").
         Set("year", 1989)
     
-    sql, err := prepQuery.ToSql()
+    sql, err := prepQuery.ToSQL()
     if err != nil {
         log.Fatal(err)
     }
@@ -203,7 +203,7 @@ func insert() {
     fmt.Println("Generated SQL plain query: ")
     fmt.Println(sql)
     
-    sql, args, err := prepQuery.ToSqlWithStmts()
+    sql, args, err := prepQuery.ToSQLWithStmts()
     if err != nil {
         log.Fatal(err)
     }

@@ -9,8 +9,7 @@ import (
 
 const sFormat = "#%s#"
 
-type mockSanitizer struct {
-}
+type mockSanitizer struct{}
 
 func (m mockSanitizer) Sanitize(v string) string {
 	return fmt.Sprintf(sFormat, v)

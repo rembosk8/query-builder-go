@@ -4,16 +4,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rembosk8/query-builder-go/query"
-	"github.com/rembosk8/query-builder-go/query/pg"
+	"github.com/rembosk8/query-builder-go/builder/pg"
+	"github.com/rembosk8/query-builder-go/internal/query"
 )
 
-var (
-	preparedQuery query.Select
-)
+var preparedQuery query.Select
 
 func BenchmarkPGBuilder(b *testing.B) {
-
 	qb := pg.NewQueryBuilder()
 
 	getPrepBuild := func() query.Select {
@@ -34,13 +31,13 @@ func BenchmarkPGBuilder(b *testing.B) {
 
 	b.Run("build plain", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, _ = preparedQuery.ToSql()
+			_, _ = preparedQuery.ToSQL()
 		}
 	})
 
 	b.Run("build with statements", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, _, _ = preparedQuery.ToSqlWithStmts()
+			_, _, _ = preparedQuery.ToSQLWithStmts()
 		}
 	})
 }
@@ -69,5 +66,5 @@ func BenchmarkReflectSelect(b *testing.B) {
 		bdr = prepFunc(&m)
 	}
 
-	_, _, _ = bdr.ToSqlWithStmts()
+	_, _, _ = bdr.ToSQLWithStmts() //nolint:dogsled
 }

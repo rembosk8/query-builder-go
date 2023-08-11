@@ -3,8 +3,8 @@ package query
 import (
 	"fmt"
 
-	"github.com/rembosk8/query-builder-go/helpers/pointer"
-	"github.com/rembosk8/query-builder-go/query/identity"
+	"github.com/rembosk8/query-builder-go/internal/helpers/pointer"
+	"github.com/rembosk8/query-builder-go/internal/identity"
 )
 
 type joinType string
@@ -62,10 +62,10 @@ type joinPart struct {
 
 func (jp joinPart) On(table1, column1, table2, column2 string) Select {
 	jp.j.on = &joinOn{
-		t1:   jp.s.indend(table1),
-		col1: jp.s.indend(column1),
-		t2:   jp.s.indend(table2),
-		col2: jp.s.indend(column2),
+		t1:   jp.s.ident(table1),
+		col1: jp.s.ident(column1),
+		t2:   jp.s.ident(table2),
+		col2: jp.s.ident(column2),
 	}
 	jp.s.addJoin(&jp.j)
 
@@ -73,7 +73,7 @@ func (jp joinPart) On(table1, column1, table2, column2 string) Select {
 }
 
 func (jp joinPart) Using(column string) Select {
-	jp.j.using = pointer.To(jp.s.indend(column))
+	jp.j.using = pointer.To(jp.s.ident(column))
 	jp.s.addJoin(&jp.j)
 
 	return jp.s

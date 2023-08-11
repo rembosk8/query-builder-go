@@ -16,5 +16,6 @@ func SnakeCase(camel string) string {
 			buf.WriteRune(c)
 		}
 	}
+
 	return buf.String()
 }

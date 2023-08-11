@@ -13,6 +13,10 @@ lint: build/bin/golangci-lint
 	build/bin/golangci-lint run ./...
 .PHONY: lint
 
+lint-fix: build/bin/golangci-lint
+	build/bin/golangci-lint run --fix ./...
+.PHONY: lint-fix
+
 test:
 	go test -count=1 --race -v ./... -coverprofile=coverage.out
 .PHONY: test

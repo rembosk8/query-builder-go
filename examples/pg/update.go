@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/rembosk8/query-builder-go/query/pg"
+	"github.com/rembosk8/query-builder-go/builder/pg"
 )
 
 func update() {
@@ -16,7 +16,7 @@ func update() {
 		Where("name").Equal("Jjjohn").
 		Returning("id")
 
-	sql, err := prepQuery.ToSql()
+	sql, err := prepQuery.ToSQL()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -24,7 +24,7 @@ func update() {
 	fmt.Println("Generated SQL plain request: ")
 	fmt.Println(sql)
 
-	sql, args, err := prepQuery.ToSqlWithStmts()
+	sql, args, err := prepQuery.ToSQLWithStmts()
 	if err != nil {
 		log.Fatal(err)
 	}

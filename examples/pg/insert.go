@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/rembosk8/query-builder-go/query/pg"
+	"github.com/rembosk8/query-builder-go/builder/pg"
 )
 
 func insert() {
@@ -13,7 +13,7 @@ func insert() {
 		Set("name", "John").
 		Set("year", 1989)
 
-	sql, err := prepQuery.ToSql()
+	sql, err := prepQuery.ToSQL()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -21,7 +21,7 @@ func insert() {
 	fmt.Println("Generated SQL plain request: ")
 	fmt.Println(sql)
 
-	sql, args, err := prepQuery.ToSqlWithStmts()
+	sql, args, err := prepQuery.ToSQLWithStmts()
 	if err != nil {
 		log.Fatal(err)
 	}

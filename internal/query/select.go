@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/rembosk8/query-builder-go/helpers/pointer"
-	"github.com/rembosk8/query-builder-go/helpers/stringer"
-	"github.com/rembosk8/query-builder-go/query/identity"
+	"github.com/rembosk8/query-builder-go/internal/helpers/pointer"
+	stringer2 "github.com/rembosk8/query-builder-go/internal/helpers/stringer"
+	"github.com/rembosk8/query-builder-go/internal/identity"
 )
 
 var _ sqler = &Select{}
@@ -22,17 +22,17 @@ type Select struct {
 	joins []*Join
 }
 
-func (s Select) ToSql() (sql string, err error) {
-	if err = s.initBuild(); err != nil {
+func (s Select) ToSQL() (sql string, err error) {
+	if err := s.initBuild(); err != nil {
 		return "", err
 	}
-	s.buildSqlPlain()
+	s.buildSQLPlain()
 
 	return s.strBuilder.String(), nil
 }
 
-func (s Select) ToSqlWithStmts() (sql string, args []any, err error) {
-	if err = s.initBuild(); err != nil {
+func (s Select) ToSQLWithStmts() (sql string, args []any, err error) {
+	if err := s.initBuild(); err != nil {
 		return "", nil, err
 	}
 	args = s.buildPrepStatement()
@@ -49,29 +49,29 @@ func (s Select) join(jt joinType, tableName string) joinPart {
 	return joinPart{
 		j: Join{
 			t:         jt,
-			joinTable: s.indend(tableName),
+			joinTable: s.ident(tableName),
 		},
 		s: s,
 	}
 }
 
-func (s Select) Join(tableName string) joinPart {
+func (s Select) Join(tableName string) joinPart { //nolint:revive
 	return s.join(inner, tableName)
 }
 
-func (s Select) RightJoin(tableName string) joinPart {
+func (s Select) RightJoin(tableName string) joinPart { //nolint:revive
 	return s.join(right, tableName)
 }
 
-func (s Select) LeftJoin(tableName string) joinPart {
+func (s Select) LeftJoin(tableName string) joinPart { //nolint:revive
 	return s.join(left, tableName)
 }
 
-func (s Select) FullJoin(tableName string) joinPart {
+func (s Select) FullJoin(tableName string) joinPart { //nolint:revive
 	return s.join(full, tableName)
 }
 
-func (s Select) Where(columnName string) wherePart[*Select] {
+func (s Select) Where(columnName string) wherePart[*Select] { //nolint:revive
 	return wherePart[*Select]{
 		column: s.indentBuilder.Indent(columnName),
 		b:      &s,
@@ -88,7 +88,7 @@ func (s Select) Limit(n uint) Select {
 	return s
 }
 
-func (s Select) OrderBy(fieldName string) orderPart {
+func (s Select) OrderBy(fieldName string) orderPart { //nolint:revive
 	return orderPart{
 		column: s.indentBuilder.Indent(fieldName),
 		s:      s,
@@ -104,7 +104,7 @@ func (s *Select) addFieldsFromModel(model any) {
 	for i := 0; i < rt.NumField(); i++ {
 		f, ok := rt.Field(i).Tag.Lookup(s.tag)
 		if !ok {
-			f = stringer.SnakeCase(rt.Field(i).Name)
+			f = stringer2.SnakeCase(rt.Field(i).Name)
 		}
 		s.fields = append(s.fields, s.indentBuilder.Indent(f))
 	}
@@ -115,7 +115,7 @@ func (s *Select) getFields() string {
 		return all
 	}
 
-	return stringer.Join(s.fields, ", ")
+	return stringer2.Join(s.fields, ", ")
 }
 
 func (s *Select) addJoin(j *Join) {
@@ -134,7 +134,6 @@ func (s *Select) buildSelectFrom() {
 		}
 		_, s.err = fmt.Fprint(s.strBuilder, j.String())
 	}
-
 }
 
 func (s *Select) buildOffset() {
@@ -165,10 +164,10 @@ func (s *Select) buildOrderBy() {
 	if len(s.orderBys) == 0 {
 		return
 	}
-	_, s.err = fmt.Fprintf(s.strBuilder, " ORDER BY %s", stringer.Join(s.orderBys, ", "))
+	_, s.err = fmt.Fprintf(s.strBuilder, " ORDER BY %s", stringer2.Join(s.orderBys, ", "))
 }
 
-func (s *Select) buildSqlPlain() {
+func (s *Select) buildSQLPlain() {
 	s.buildSelectFrom()
 
 	s.buildWhere()

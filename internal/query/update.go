@@ -3,8 +3,8 @@ package query
 import (
 	"fmt"
 
-	"github.com/rembosk8/query-builder-go/helpers/stringer"
-	"github.com/rembosk8/query-builder-go/query/identity"
+	"github.com/rembosk8/query-builder-go/internal/helpers/stringer"
+	"github.com/rembosk8/query-builder-go/internal/identity"
 )
 
 var _ fmt.Stringer = &filedValue{}
@@ -35,17 +35,17 @@ type Update struct {
 
 var _ sqler = &Update{}
 
-func (u Update) ToSql() (sql string, err error) {
-	if err = u.initBuild(); err != nil {
+func (u Update) ToSQL() (sql string, err error) {
+	if err := u.initBuild(); err != nil {
 		return "", err
 	}
-	u.buildSqlPlain()
+	u.buildSQLPlain()
 
 	return u.strBuilder.String(), nil
 }
 
-func (u Update) ToSqlWithStmts() (sql string, args []any, err error) {
-	if err = u.initBuild(); err != nil {
+func (u Update) ToSQLWithStmts() (sql string, args []any, err error) {
+	if err := u.initBuild(); err != nil {
 		return "", nil, err
 	}
 	args = u.buildPrepStatement()
@@ -55,15 +55,15 @@ func (u Update) ToSqlWithStmts() (sql string, args []any, err error) {
 
 func (u Update) Set(field string, value any) Update {
 	u.fieldValue = append(u.fieldValue, filedValue{
-		field: u.indend(field),
+		field: u.ident(field),
 		value: u.value(value),
 	})
 	return u
 }
 
-func (u Update) Where(columnName string) wherePart[*Update] {
+func (u Update) Where(columnName string) wherePart[*Update] { //nolint:revive
 	return wherePart[*Update]{
-		column: u.indend(columnName),
+		column: u.ident(columnName),
 		b:      &u,
 	}
 }
@@ -75,13 +75,13 @@ func (u Update) Only() Update {
 
 func (u Update) Returning(fields ...string) Update {
 	for _, f := range fields {
-		u.returning = append(u.returning, u.indend(f))
+		u.returning = append(u.returning, u.ident(f))
 	}
 
 	return u
 }
 
-func (u *Update) buildSqlPlain() {
+func (u *Update) buildSQLPlain() {
 	u.buildUpdateTable()
 	u.buildSet()
 	u.buildWhere()
@@ -143,7 +143,6 @@ func (u *Update) buildSetStmt() (args []any) {
 	_, u.err = fmt.Fprintf(u.strBuilder, " SET %s", sql)
 
 	for i := 1; i < len(u.fieldValue); i++ {
-
 		sql, v = u.fieldValue[i].StringStmt(num)
 		if v != nil {
 			args = append(args, v)

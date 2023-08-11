@@ -3,7 +3,7 @@ package query
 import (
 	"fmt"
 
-	"github.com/rembosk8/query-builder-go/query/identity"
+	"github.com/rembosk8/query-builder-go/internal/identity"
 )
 
 type OrderType uint8

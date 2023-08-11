@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rembosk8/query-builder-go/helpers/stringer"
-	"github.com/rembosk8/query-builder-go/query/identity"
+	"github.com/rembosk8/query-builder-go/internal/helpers/stringer"
+	"github.com/rembosk8/query-builder-go/internal/identity"
 )
 
 type Insert struct {
@@ -18,17 +18,17 @@ type Insert struct {
 
 var _ sqler = &Insert{}
 
-func (i Insert) ToSql() (sql string, err error) {
-	if err = i.initBuild(); err != nil {
+func (i Insert) ToSQL() (sql string, err error) {
+	if err := i.initBuild(); err != nil {
 		return "", err
 	}
-	i.buildSqlPlain()
+	i.buildSQLPlain()
 
 	return i.strBuilder.String(), nil
 }
 
-func (i Insert) ToSqlWithStmts() (sql string, args []any, err error) {
-	if err = i.initBuild(); err != nil {
+func (i Insert) ToSQLWithStmts() (sql string, args []any, err error) {
+	if err := i.initBuild(); err != nil {
 		return "", nil, err
 	}
 	args = i.buildPrepStatement()
@@ -37,13 +37,13 @@ func (i Insert) ToSqlWithStmts() (sql string, args []any, err error) {
 }
 
 func (i Insert) Set(field string, value any) Insert {
-	i.fields = append(i.fields, i.indend(field))
+	i.fields = append(i.fields, i.ident(field))
 	i.values = append(i.values, i.value(value))
 
 	return i
 }
 
-func (i *Insert) buildSqlPlain() {
+func (i *Insert) buildSQLPlain() {
 	i.buildInsertInto()
 	i.buildValues()
 }

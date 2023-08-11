@@ -4,26 +4,26 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rembosk8/query-builder-go/helpers/pointer"
-	"github.com/rembosk8/query-builder-go/helpers/stringer"
-	"github.com/rembosk8/query-builder-go/query/identity"
+	"github.com/rembosk8/query-builder-go/internal/helpers/pointer"
+	"github.com/rembosk8/query-builder-go/internal/helpers/stringer"
+	identity2 "github.com/rembosk8/query-builder-go/internal/identity"
 )
 
 type sqler interface {
-	ToSql() (sql string, err error)
-	ToSqlWithStmts() (sql string, args []any, err error)
+	ToSQL() (sql string, err error)
+	ToSQLWithStmts() (sql string, args []any, err error)
 
-	buildSqlPlain()
+	buildSQLPlain()
 	buildPrepStatement() (args []any)
 }
 
 type baseQuery struct {
-	table  *identity.Identity // from <table>
+	table  *identity2.Identity // from <table>
 	wheres []*Where
 
 	err error
 
-	indentBuilder *identity.Builder
+	indentBuilder *identity2.Builder
 	strBuilder    *strings.Builder
 	tag           string
 }
@@ -40,6 +40,7 @@ func (bq *baseQuery) initBuild() error {
 		return ErrTableNotSet
 	}
 	bq.strBuilder = new(strings.Builder)
+
 	return nil
 }
 
@@ -47,11 +48,11 @@ func (bq *baseQuery) whereAdd(w *Where) {
 	bq.wheres = append(bq.wheres, w)
 }
 
-func (bq *baseQuery) value(v any) identity.Value {
+func (bq *baseQuery) value(v any) identity2.Value {
 	return bq.indentBuilder.Value(v)
 }
 
-func (bq *baseQuery) indend(f string) identity.Identity {
+func (bq *baseQuery) ident(f string) identity2.Identity {
 	return bq.indentBuilder.Indent(f)
 }
 
@@ -62,7 +63,7 @@ func (bq *baseQuery) buildWhere() {
 	if len(bq.wheres) == 0 {
 		return
 	}
-	_, bq.err = fmt.Fprintf(bq.strBuilder, " WHERE %s", stringer.Join(bq.wheres, " AND ")) //todo: build AND and OR separately
+	_, bq.err = fmt.Fprintf(bq.strBuilder, " WHERE %s", stringer.Join(bq.wheres, " AND ")) // todo: build AND and OR separately
 }
 
 func (bq *baseQuery) buildWherePrepStmt(args []any) []any {

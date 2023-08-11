@@ -1,4 +1,4 @@
-package sanitize
+package pg
 
 import (
 	"encoding/hex"
@@ -12,7 +12,7 @@ import (
 //
 //	 set of strings which contains standard Postgres functions and names
 //		which must not be sanitized
-var standardNames = map[string]struct{}{
+var standardNames = map[string]struct{}{ //nolint:gochecknoglobals
 	"default": {},
 	"now()":   {},
 }

@@ -1,9 +1,15 @@
 package query
 
-import "github.com/rembosk8/query-builder-go/query/identity"
+import (
+	"github.com/rembosk8/query-builder-go/internal/identity"
+)
 
-const defaultTag = "db"
-const all = "*"
+const (
+	defaultTag = "db"
+	all        = "*"
+)
+
+// todo: try to use parent *Query as in ctx
 
 type BaseBuilder struct {
 	bq baseQuery

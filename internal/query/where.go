@@ -5,8 +5,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/rembosk8/query-builder-go/helpers/stringer"
-	"github.com/rembosk8/query-builder-go/query/identity"
+	"github.com/rembosk8/query-builder-go/internal/helpers/stringer"
+	"github.com/rembosk8/query-builder-go/internal/identity"
 )
 
 type whereAdder interface {
@@ -38,7 +38,7 @@ const (
 	notLike
 )
 
-var conditionStrings = []string{
+var conditionStrings = []string{ //nolint:gochecknoglobals
 	eq:         "=",
 	ne:         "!=",
 	le:         "<",
@@ -128,31 +128,37 @@ func (w *Where) PrepStmtString(num int, wr io.Writer) ([]any, error) {
 
 func (wp wherePart[T]) Equal(v any) T {
 	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: eq})
+
 	return wp.b
 }
 
 func (wp wherePart[T]) NotEqual(v any) T {
 	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: ne})
+
 	return wp.b
 }
 
 func (wp wherePart[T]) Less(v any) T {
 	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: le})
+
 	return wp.b
 }
 
 func (wp wherePart[T]) LessEqual(v any) T {
 	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: lq})
+
 	return wp.b
 }
 
 func (wp wherePart[T]) Greater(v any) T {
 	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: gt})
+
 	return wp.b
 }
 
 func (wp wherePart[T]) GreaterEqual(v any) T {
 	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: gq})
+
 	return wp.b
 }
 
@@ -162,6 +168,7 @@ func (wp wherePart[T]) In(vs ...any) T {
 		values[i] = wp.b.value(vs[i])
 	}
 	wp.b.whereAdd(&Where{field: wp.column, value: values, cond: in})
+
 	return wp.b
 }
 
@@ -171,16 +178,19 @@ func (wp wherePart[T]) NotIn(vs ...any) T {
 		values[i] = wp.b.value(vs[i])
 	}
 	wp.b.whereAdd(&Where{field: wp.column, value: values, cond: notIn})
+
 	return wp.b
 }
 
 func (wp wherePart[T]) IsNull() T {
 	wp.b.whereAdd(&Where{field: wp.column, value: nil, cond: isNull})
+
 	return wp.b
 }
 
 func (wp wherePart[T]) IsNotNull() T {
 	wp.b.whereAdd(&Where{field: wp.column, value: nil, cond: isNotNull})
+
 	return wp.b
 }
 
@@ -190,6 +200,7 @@ func (wp wherePart[T]) Between(start, end any) T {
 		wp.b.value(end),
 	}
 	wp.b.whereAdd(&Where{field: wp.column, value: values, cond: between})
+
 	return wp.b
 }
 
@@ -199,15 +210,18 @@ func (wp wherePart[T]) NotBetween(start, end any) T {
 		wp.b.value(end),
 	}
 	wp.b.whereAdd(&Where{field: wp.column, value: values, cond: notBetween})
+
 	return wp.b
 }
 
 func (wp wherePart[T]) Like(pattern string) T {
 	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(pattern)}, cond: like})
+
 	return wp.b
 }
 
 func (wp wherePart[T]) NotLike(pattern string) T {
 	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(pattern)}, cond: notLike})
+
 	return wp.b
 }

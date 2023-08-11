@@ -3,8 +3,8 @@ package query
 import (
 	"fmt"
 
-	"github.com/rembosk8/query-builder-go/helpers/stringer"
-	"github.com/rembosk8/query-builder-go/query/identity"
+	"github.com/rembosk8/query-builder-go/internal/helpers/stringer"
+	"github.com/rembosk8/query-builder-go/internal/identity"
 )
 
 type Delete struct {
@@ -15,17 +15,17 @@ type Delete struct {
 
 var _ sqler = &Delete{}
 
-func (d Delete) ToSql() (sql string, err error) {
-	if err = d.initBuild(); err != nil {
+func (d Delete) ToSQL() (sql string, err error) {
+	if err := d.initBuild(); err != nil {
 		return "", err
 	}
-	d.buildSqlPlain()
+	d.buildSQLPlain()
 
 	return d.strBuilder.String(), nil
 }
 
-func (d Delete) ToSqlWithStmts() (sql string, args []any, err error) {
-	if err = d.initBuild(); err != nil {
+func (d Delete) ToSQLWithStmts() (sql string, args []any, err error) {
+	if err := d.initBuild(); err != nil {
 		return "", nil, err
 	}
 	args = d.buildPrepStatement()
@@ -38,16 +38,16 @@ func (d Delete) Only() Delete {
 	return d
 }
 
-func (d Delete) Where(field string) wherePart[*Delete] {
+func (d Delete) Where(field string) wherePart[*Delete] { //nolint:revive
 	return wherePart[*Delete]{
-		column: d.indend(field),
+		column: d.ident(field),
 		b:      &d,
 	}
 }
 
 func (d Delete) Returning(fields ...string) Delete {
 	for _, f := range fields {
-		d.returning = append(d.returning, d.indend(f))
+		d.returning = append(d.returning, d.ident(f))
 	}
 
 	return d
@@ -65,7 +65,7 @@ func (d *Delete) buildDeleteFrom() {
 	_, d.err = fmt.Fprint(d.strBuilder, upd, d.table.String())
 }
 
-func (d Delete) buildSqlPlain() {
+func (d Delete) buildSQLPlain() {
 	d.buildDeleteFrom()
 	d.buildWhere()
 	d.buildReturning()
