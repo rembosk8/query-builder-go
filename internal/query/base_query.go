@@ -6,7 +6,7 @@ import (
 
 	"github.com/rembosk8/query-builder-go/internal/helpers/pointer"
 	"github.com/rembosk8/query-builder-go/internal/helpers/stringer"
-	identity2 "github.com/rembosk8/query-builder-go/internal/identity"
+	identity "github.com/rembosk8/query-builder-go/internal/identity"
 )
 
 type sqler interface {
@@ -18,12 +18,12 @@ type sqler interface {
 }
 
 type baseQuery struct {
-	table  *identity2.Identity // from <table>
+	table  *identity.Identity // from <table>
 	wheres []*Where
 
 	err error
 
-	indentBuilder *identity2.Builder
+	indentBuilder *identity.Builder
 	strBuilder    *strings.Builder
 	tag           string
 }
@@ -48,11 +48,11 @@ func (bq *baseQuery) whereAdd(w *Where) {
 	bq.wheres = append(bq.wheres, w)
 }
 
-func (bq *baseQuery) value(v any) identity2.Value {
+func (bq *baseQuery) value(v any) identity.Value {
 	return bq.indentBuilder.Value(v)
 }
 
-func (bq *baseQuery) ident(f string) identity2.Identity {
+func (bq *baseQuery) ident(f string) identity.Identity {
 	return bq.indentBuilder.Indent(f)
 }
 
