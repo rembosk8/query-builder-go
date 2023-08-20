@@ -124,96 +124,96 @@ func (w *WherePart[T]) Equal(v any) T {
 }
 
 func (w *WherePart[T]) NotEqual(v any) T {
-	w.cond = ne
-	w.value = []any{v}
+	w.Where.cond = ne
+	w.Where.value = []any{v}
 
 	return w.b
 }
 
 func (w *WherePart[T]) Less(v any) T {
-	w.cond = le
-	w.value = []any{v}
+	w.Where.cond = le
+	w.Where.value = []any{v}
 
 	return w.b
 }
 
 func (w *WherePart[T]) LessEqual(v any) T {
-	w.cond = lq
-	w.value = []any{v}
+	w.Where.cond = lq
+	w.Where.value = []any{v}
 
 	return w.b
 }
 
 func (w *WherePart[T]) Greater(v any) T {
-	w.cond = gt
-	w.value = []any{v}
+	w.Where.cond = gt
+	w.Where.value = []any{v}
 
 	return w.b
 }
 
 func (w *WherePart[T]) GreaterEqual(v any) T {
-	w.cond = gq
-	w.value = []any{v}
+	w.Where.cond = gq
+	w.Where.value = []any{v}
 
 	return w.b
 }
 
 func (w *WherePart[T]) In(vs ...any) T {
-	w.cond = in
-	w.value = vs
+	w.Where.cond = in
+	w.Where.value = append(w.Where.value, vs...)
 
 	return w.b
 }
 
 func (w *WherePart[T]) NotIn(vs ...any) T {
-	w.cond = notIn
-	w.value = vs
+	w.Where.cond = notIn
+	w.Where.value = append(w.Where.value, vs...)
 
 	return w.b
 }
 
 func (w *WherePart[T]) IsNull() T {
-	w.cond = isNull
+	w.Where.cond = isNull
 
 	return w.b
 }
 
 func (w *WherePart[T]) IsNotNull() T {
-	w.cond = isNotNull
+	w.Where.cond = isNotNull
 
 	return w.b
 }
 
 func (w *WherePart[T]) Between(start, end any) T {
-	w.value = []any{
+	w.Where.value = []any{
 		start,
 		end,
 	}
-	w.cond = between
+	w.Where.cond = between
 
 	return w.b
 }
 
 func (w *WherePart[T]) NotBetween(start, end any) T {
-	w.value = []any{
+	w.Where.value = []any{
 		start,
 		end,
 	}
-	w.cond = notBetween
+	w.Where.cond = notBetween
 
 	return w.b
 }
 
 func (w *WherePart[T]) Like(pattern string) T {
-	w.cond = like
-	w.value = []any{pattern}
+	w.Where.cond = like
+	w.Where.value = []any{pattern}
 
 	return w.b
 }
 
 func (w *WherePart[T]) NotLike(pattern string) T {
-	w.cond = notLike
-	w.value = []any{pattern}
+	w.Where.cond = notLike
+	w.Where.value = []any{pattern}
 
 	return w.b
 }

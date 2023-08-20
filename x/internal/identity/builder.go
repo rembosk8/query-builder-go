@@ -47,7 +47,7 @@ func (b *Builder) Value(val any) Value {
 	return fmt.Sprintf("%v", val)
 }
 
-func (b *Builder) Values(vals ...any) []Value {
+func (b *Builder) Values(vals []any) []Value {
 	// todo: think about sanitizing on place, not post hoc
 	res := make([]Value, len(vals))
 	if b.valSanitizer != nil {

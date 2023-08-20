@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rembosk8/query-builder-go/internal/helpers/pointer"
 	"github.com/rembosk8/query-builder-go/x/internal/identity"
 )
 
@@ -21,11 +22,7 @@ type child struct {
 	parent parenter
 }
 
-func (c *child) Parent() any {
-	if c == nil {
-		return nil
-	}
-
+func (c child) Parent() any {
 	return c.parent
 }
 
@@ -42,8 +39,8 @@ func (s Select) Where(field string) *WherePart[*Select] {
 	s.parent = &w
 
 	return &WherePart[*Select]{
-		Where: &w,
 		b:     &s,
+		Where: &w,
 	}
 }
 
@@ -71,6 +68,8 @@ type queryBuilder struct {
 	cols   []identity.Identity
 	table  identity.Identity
 	wheres []*Where //todo: [][]Where or []OrWhere -> OrWhere{[]AndWhere}
+	offset *uint
+	limit  *uint
 
 	err error
 
@@ -89,33 +88,32 @@ func (qb *queryBuilder) collect(p any) {
 		return
 	}
 
-	for {
-		switch q := p.(type) {
-		case *Select:
-			return
-		case *SelectCore:
-			qb.indentBuilder = q.indentBuilder
+	switch q := p.(type) {
+	case Select:
+		return
+	case *SelectCore:
+		qb.indentBuilder = q.indentBuilder
 
-			if len(q.fields) > 0 {
-				qb.cols = make([]identity.Identity, len(q.fields))
-				for i := range q.fields {
-					qb.cols[i] = qb.indentBuilder.Ident(q.fields[i])
-				}
+		if len(q.fields) > 0 {
+			qb.cols = make([]identity.Identity, len(q.fields))
+			for i := range q.fields {
+				qb.cols[i] = qb.indentBuilder.Ident(q.fields[i])
 			}
-
-			qb.table = qb.indentBuilder.Ident(q.table)
-
-			return
-		case *Where:
-			qb.wheres = append(qb.wheres, q)
-			return
-		default:
-			panic(fmt.Sprintf("wrong type in collect %T", p))
 		}
+
+		qb.table = qb.indentBuilder.Ident(q.table)
+	case *Where:
+		qb.wheres = append(qb.wheres, q)
+	case *Offset:
+		qb.offset = pointer.To(q.offset)
+	case *Limit:
+		qb.limit = pointer.To(q.limit)
+	default:
+		panic(fmt.Sprintf("wrong type in collect %T", p))
 	}
 }
 
-func (s *Select) ToSQL() (sql string, err error) {
+func (s Select) ToSQL() (sql string, err error) {
 	qb := queryBuilder{
 		strBuilder: new(strings.Builder),
 	}
@@ -123,17 +121,21 @@ func (s *Select) ToSQL() (sql string, err error) {
 
 	qb.buildSelectFrom()
 	qb.buildWhere()
+	qb.buildOffset()
+	qb.buildLimit()
 
 	return qb.strBuilder.String(), qb.err
 }
 
-func (s *Select) ToSQLWithStmts() (sql string, args []any, err error) {
+func (s Select) ToSQLWithStmts() (sql string, args []any, err error) {
 	qb := queryBuilder{
 		strBuilder: new(strings.Builder),
 	}
 	qb.collect(s)
 	qb.buildSelectFrom()
 	args = qb.buildWherePrepStmt(args)
+	qb.buildOffset()
+	qb.buildLimit()
 
 	return qb.strBuilder.String(), args, qb.err
 }
@@ -164,22 +166,36 @@ func (s *Select) ToSQLWithStmts() (sql string, args []any, err error) {
 //	return s.join(full, tableName)
 //}
 
-//func (s Select) Where(columnName string) wherePart[*Select] { //nolint:revive
-//	return wherePart[*Select]{
-//		field: s.indentBuilder.Ident(columnName),
-//		b:      &s,
-//	}
-//}
-//
-//func (s Select) Offset(n uint) Select {
-//	s.offset = pointer.To(n)
-//	return s
-//}
-//
-//func (s Select) Limit(n uint) Select {
-//	s.limit = pointer.To(n)
-//	return s
-//}
+type Offset struct {
+	child
+	offset uint
+}
+
+func (s Select) Offset(n uint) *Select {
+	o := &Offset{
+		child:  child{parent: s.parent},
+		offset: n,
+	}
+	s.parent = o
+
+	return &s
+}
+
+type Limit struct {
+	child
+	limit uint
+}
+
+func (s Select) Limit(n uint) *Select {
+	l := &Limit{
+		child: child{parent: s.parent},
+		limit: n,
+	}
+	s.parent = l
+
+	return &s
+}
+
 //
 //func (s Select) OrderBy(fieldName string) orderPart { //nolint:revive
 //	return orderPart{
@@ -241,11 +257,11 @@ func (qb *queryBuilder) buildWhere() {
 }
 
 func (qb *queryBuilder) buildWherePrepStmt(args []any) []any {
-	if len(qb.wheres) == 0 {
-		return args
-	}
 	if qb.err != nil {
 		return nil
+	}
+	if len(qb.wheres) == 0 {
+		return args
 	}
 	var vals []any
 	cnt := len(args) + 1
@@ -272,4 +288,25 @@ func (qb *queryBuilder) buildWherePrepStmt(args []any) []any {
 	}
 
 	return args
+}
+
+func (qb *queryBuilder) buildOffset() {
+	if qb.err != nil {
+		return
+	}
+	if qb.offset == nil {
+		return
+	}
+
+	_, qb.err = fmt.Fprintf(qb.strBuilder, " OFFSET %d", *qb.offset)
+}
+
+func (qb *queryBuilder) buildLimit() {
+	if qb.err != nil {
+		return
+	}
+	if qb.limit == nil {
+		return
+	}
+	_, qb.err = fmt.Fprintf(qb.strBuilder, " LIMIT %d", *qb.limit)
 }
