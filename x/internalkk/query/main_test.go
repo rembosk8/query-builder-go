@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/rembosk8/query-builder-go/x/builder/pg"
-	"github.com/rembosk8/query-builder-go/x/internal/query"
+	"github.com/rembosk8/query-builder-go/x/internalkk/query"
 )
 
 var qb query.BaseBuilder

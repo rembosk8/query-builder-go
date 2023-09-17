@@ -1,7 +1,7 @@
 package query
 
 import (
-	"github.com/rembosk8/query-builder-go/x/internal/identity"
+	"github.com/rembosk8/query-builder-go/x/internalkk/identity"
 )
 
 const (
@@ -58,13 +58,17 @@ func (b BaseBuilder) Select(fields ...string) *SelectCore {
 //	return s
 //}
 
-//func (b BaseBuilder) Update(tableName string) Update {
-//	u := Update{
-//		baseQuery: b.bq,
-//	}
-//	u.setTable(tableName)
-//	return u
-//}
+func (b BaseBuilder) Update(tableName string) *Update {
+	u := UpdateCore{
+		core: core{
+			indentBuilder: b.bq.indentBuilder,
+		},
+	}
+	u.table = tableName
+
+	return &Update{child{parent: &u}}
+}
+
 //
 //func (b BaseBuilder) DeleteFrom(tableName string) Delete {
 //	u := Delete{

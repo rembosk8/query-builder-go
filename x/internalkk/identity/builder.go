@@ -38,7 +38,7 @@ func (b *Builder) Idents(names ...string) []Identity {
 	return names
 }
 
-func (b *Builder) Value(val any) Value {
+func (b *Builder) Value(val any) string {
 	// todo: think about sanitizing on place, not post hoc
 	if b.valSanitizer != nil {
 		return b.valSanitizer.Sanitize(val)
@@ -47,9 +47,9 @@ func (b *Builder) Value(val any) Value {
 	return fmt.Sprintf("%v", val)
 }
 
-func (b *Builder) Values(vals []any) []Value {
+func (b *Builder) Values(vals []any) []string {
 	// todo: think about sanitizing on place, not post hoc
-	res := make([]Value, len(vals))
+	res := make([]string, len(vals))
 	if b.valSanitizer != nil {
 		for i := range vals {
 			res[i] = b.valSanitizer.Sanitize(vals[i])

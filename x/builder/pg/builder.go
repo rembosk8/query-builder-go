@@ -1,9 +1,9 @@
 package pg
 
 import (
-	"github.com/rembosk8/query-builder-go/x/internal/identity"
-	"github.com/rembosk8/query-builder-go/x/internal/query"
-	"github.com/rembosk8/query-builder-go/x/internal/sanitizers/pg"
+	"github.com/rembosk8/query-builder-go/x/internalkk/identity"
+	"github.com/rembosk8/query-builder-go/x/internalkk/query"
+	"github.com/rembosk8/query-builder-go/x/internalkk/sanitizers/pg"
 )
 
 func NewQueryBuilder() query.BaseBuilder {

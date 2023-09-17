@@ -6,14 +6,14 @@ import (
 
 	"github.com/rembosk8/query-builder-go/builder/pg"
 	"github.com/rembosk8/query-builder-go/internal/query"
+	xpg "github.com/rembosk8/query-builder-go/x/builder/pg"
+	xquery "github.com/rembosk8/query-builder-go/x/internalkk/query"
 )
 
-var preparedQuery query.Select
-
 func BenchmarkPGBuilder(b *testing.B) {
-	qb := pg.NewQueryBuilder()
+	qb := xpg.NewQueryBuilder()
 
-	getPrepBuild := func() query.Select {
+	getPrepBuild := func() *xquery.Select {
 		return qb.Select("one", "two", "three").
 			From("table 1").
 			Where("id").Equal(1).
@@ -21,7 +21,7 @@ func BenchmarkPGBuilder(b *testing.B) {
 			Where("count").Between(1, 100).
 			Limit(100).Offset(100)
 	}
-	preparedQuery = getPrepBuild()
+	preparedQuery := getPrepBuild()
 
 	b.Run("prepare query", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {

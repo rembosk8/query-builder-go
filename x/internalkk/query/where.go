@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/rembosk8/query-builder-go/x/internal/identity"
+	"github.com/rembosk8/query-builder-go/x/internalkk/identity"
 )
 
 type WherePart[T Builder] struct {
