@@ -29,6 +29,7 @@ type Select struct {
 }
 
 func (s Select) Where(field string) *WherePart[*Select] {
+	// todo: try pointer receiver and check benchmarks
 	// todo: check heap move
 	w := Where{
 		child: child{parent: s.parent},

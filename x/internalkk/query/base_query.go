@@ -41,6 +41,22 @@ type queryBuilder struct {
 	tag string
 }
 
+func (qb *queryBuilder) SqlStmts(args []any) (sql string, argsOut []any, err error) {
+	if qb.err != nil {
+		return "", nil, qb.err
+	}
+
+	return qb.strBuilder.String(), args, nil
+}
+
+func (qb *queryBuilder) Sql() (sql string, err error) {
+	if qb.err != nil {
+		return "", qb.err
+	}
+
+	return qb.strBuilder.String(), nil
+}
+
 func (qb *queryBuilder) collect(p any) {
 	par, ok := p.(parenter)
 	if ok {
@@ -52,7 +68,7 @@ func (qb *queryBuilder) collect(p any) {
 	}
 
 	switch q := p.(type) {
-	case Select, Update:
+	case Select, Update, *Delete:
 		return
 	case *SelectCore:
 		qb.indentBuilder = q.indentBuilder
@@ -65,6 +81,9 @@ func (qb *queryBuilder) collect(p any) {
 		}
 		qb.table = qb.indentBuilder.Ident(q.table)
 	case *UpdateCore:
+		qb.indentBuilder = q.indentBuilder
+		qb.table = qb.indentBuilder.Ident(q.table)
+	case *DeleteCore:
 		qb.indentBuilder = q.indentBuilder
 		qb.table = qb.indentBuilder.Ident(q.table)
 	case *Where:

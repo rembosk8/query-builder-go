@@ -69,15 +69,15 @@ func (b BaseBuilder) Update(tableName string) *Update {
 	return &Update{child{parent: &u}}
 }
 
-//
-//func (b BaseBuilder) DeleteFrom(tableName string) Delete {
-//	u := Delete{
-//		baseQuery: b.bq,
-//	}
-//	u.setTable(tableName)
-//	return u
-//}
-//
+func (b BaseBuilder) DeleteFrom(tableName string) *Delete {
+	dc := DeleteCore{
+		core:  core{indentBuilder: b.bq.indentBuilder},
+		table: tableName,
+	}
+
+	return &Delete{child{parent: &dc}}
+}
+
 //func (b BaseBuilder) InsertInto(tableName string) Insert {
 //	i := Insert{
 //		baseQuery: b.bq,
