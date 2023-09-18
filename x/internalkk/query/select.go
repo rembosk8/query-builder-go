@@ -97,31 +97,38 @@ func (s Select) ToSQLWithStmts() (sql string, args []any, err error) {
 	return qb.strBuilder.String(), args, qb.err
 }
 
-//func (s Select) join(jt joinType, tableName string) joinPart {
-//	return joinPart{
-//		j: Join{
-//			t:         jt,
-//			joinTable: s.ident(tableName),
-//		},
-//		s: s,
-//	}
-//}
-//
-//func (s Select) Join(tableName string) joinPart { //nolint:revive
-//	return s.join(inner, tableName)
-//}
-//
-//func (s Select) RightJoin(tableName string) joinPart { //nolint:revive
-//	return s.join(right, tableName)
-//}
-//
-//func (s Select) LeftJoin(tableName string) joinPart { //nolint:revive
-//	return s.join(left, tableName)
-//}
-//
-//func (s Select) FullJoin(tableName string) joinPart { //nolint:revive
-//	return s.join(full, tableName)
-//}
+func (s Select) join(jt joinType, tableName string) *joinPart {
+	j := Join{
+		child:     child{parent: s.parent},
+		t:         jt,
+		joinTable: tableName,
+	}
+
+	jp := &joinPart{
+		j: &j,
+		s: &s,
+	}
+
+	s.parent = &j
+
+	return jp
+}
+
+func (s Select) Join(tableName string) *joinPart { //nolint:revive
+	return s.join(inner, tableName)
+}
+
+func (s Select) RightJoin(tableName string) *joinPart { //nolint:revive
+	return s.join(right, tableName)
+}
+
+func (s Select) LeftJoin(tableName string) *joinPart { //nolint:revive
+	return s.join(left, tableName)
+}
+
+func (s Select) FullJoin(tableName string) *joinPart { //nolint:revive
+	return s.join(full, tableName)
+}
 
 type Offset struct {
 	child
@@ -175,7 +182,3 @@ func (s Select) OrderBy(fieldName string) *Order { //nolint:revive
 //		s.fields = append(s.fields, s.indentBuilder.Ident(f))
 //	}
 //}
-
-//	func (s *Select) addJoin(j *Join) {
-//		s.joins = append(s.joins, j)
-//	}

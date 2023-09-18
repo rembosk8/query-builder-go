@@ -28,6 +28,7 @@ type queryBuilder struct {
 	offset   *uint
 	limit    *uint
 	orderBys []*Order
+	joins    []*Join
 
 	// update.
 	only      bool
@@ -84,6 +85,8 @@ func (qb *queryBuilder) collect(p any) {
 			}
 		}
 		qb.table = qb.indentBuilder.Ident(q.table)
+	case *Join:
+		qb.joins = append(qb.joins, q)
 	case *UpdateCore:
 		qb.indentBuilder = q.indentBuilder
 		qb.table = qb.indentBuilder.Ident(q.table)
@@ -129,12 +132,12 @@ func (qb *queryBuilder) buildSelectFrom() {
 	}
 
 	_, qb.err = fmt.Fprintf(qb.strBuilder, "SELECT %s FROM %s", qb.getFields(), qb.table)
-	//for _, j := range qb.joins {
-	//	if qb.err != nil {
-	//		return
-	//	}
-	//	_, qb.err = fmt.Fprint(qb.strBuilder, j.String())
-	//}
+	for _, j := range qb.joins {
+		if qb.err != nil {
+			return
+		}
+		_, qb.err = fmt.Fprint(qb.strBuilder, j.String(qb.indentBuilder))
+	}
 }
 
 func (qb *queryBuilder) buildWhere() {

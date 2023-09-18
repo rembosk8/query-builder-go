@@ -208,66 +208,66 @@ func TestPGSelect(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	//t.Run("try to select with JOIN", func(t *testing.T) {
-	//	joinTable1 := "join_tbl_1"
-	//	joinTable2 := "join_tbl_2"
-	//	prebuild := qb.Select().
-	//		From(tableName).
-	//		Join(joinTable1).On(tableName, "id", joinTable1, "id").
-	//		RightJoin(joinTable2).Using("key")
-	//	sql, err := prebuild.ToSQL()
-	//	expectedPlainSQL := fmt.Sprintf(
-	//		"SELECT * FROM %q JOIN %q ON %q.\"id\" = %q.\"id\" RIGHT JOIN %q USING (\"key\")",
-	//		tableName,
-	//		joinTable1,
-	//		tableName,
-	//		joinTable1,
-	//		joinTable2,
-	//	)
-	//	assert.Equal(t, expectedPlainSQL, sql)
-	//	assert.NoError(t, err)
-	//
-	//	sql, args, err := prebuild.ToSQLWithStmts()
-	//	expectedSQL := fmt.Sprintf(
-	//		"SELECT * FROM %q JOIN %q ON %q.\"id\" = %q.\"id\" RIGHT JOIN %q USING (\"key\")",
-	//		tableName,
-	//		joinTable1,
-	//		tableName,
-	//		joinTable1,
-	//		joinTable2,
-	//	)
-	//	assert.Equal(t, expectedSQL, sql)
-	//	assert.NoError(t, err)
-	//	assert.Len(t, args, 0)
-	//})
+	t.Run("try to select with JOIN", func(t *testing.T) {
+		joinTable1 := "join_tbl_1"
+		joinTable2 := "join_tbl_2"
+		prebuild := qb.Select().
+			From(tableName).
+			Join(joinTable1).On(tableName, "id", joinTable1, "id").
+			RightJoin(joinTable2).Using("key")
+		sql, err := prebuild.ToSQL()
+		expectedPlainSQL := fmt.Sprintf(
+			"SELECT * FROM %q JOIN %q ON %q.\"id\" = %q.\"id\" RIGHT JOIN %q USING (\"key\")",
+			tableName,
+			joinTable1,
+			tableName,
+			joinTable1,
+			joinTable2,
+		)
+		assert.Equal(t, expectedPlainSQL, sql)
+		assert.NoError(t, err)
+
+		sql, args, err := prebuild.ToSQLWithStmts()
+		expectedSQL := fmt.Sprintf(
+			"SELECT * FROM %q JOIN %q ON %q.\"id\" = %q.\"id\" RIGHT JOIN %q USING (\"key\")",
+			tableName,
+			joinTable1,
+			tableName,
+			joinTable1,
+			joinTable2,
+		)
+		assert.Equal(t, expectedSQL, sql)
+		assert.NoError(t, err)
+		assert.Len(t, args, 0)
+	})
 }
 
-//
-//func TestSelectReusage(t *testing.T) {
-//	var (
-//		sql  string
-//		err  error
-//		args []any
-//	)
-//	const tableName = "tableName"
-//
-//	prepBuild := qb.Select("id", "name", "year").From(tableName)
-//
-//	sql, args, err = prepBuild.Where("first").Equal(1).ToSQLWithStmts()
-//	expectedSQL := fmt.Sprintf("SELECT \"id\", \"name\", \"year\" FROM %q WHERE \"first\" = $1", tableName)
-//	assert.Equal(t, expectedSQL, sql)
-//	assert.NoError(t, err)
-//	assert.Len(t, args, 1)
-//	assert.Equal(t, 1, args[0])
-//
-//	sql, args, err = prepBuild.Where("first2").Equal(10).Where("second").Equal(20).ToSQLWithStmts()
-//	expectedSQL = fmt.Sprintf("SELECT \"id\", \"name\", \"year\" FROM %q WHERE \"first2\" = $1 AND \"second\" = $2", tableName)
-//	assert.Equal(t, expectedSQL, sql)
-//	assert.NoError(t, err)
-//	assert.Len(t, args, 2)
-//	assert.Equal(t, 10, args[0])
-//	assert.Equal(t, 20, args[1])
-//}
+func TestSelectReusage(t *testing.T) {
+	var (
+		sql  string
+		err  error
+		args []any
+	)
+	const tableName = "tableName"
+
+	prepBuild := qb.Select("id", "name", "year").From(tableName)
+
+	sql, args, err = prepBuild.Where("first").Equal(1).ToSQLWithStmts()
+	expectedSQL := fmt.Sprintf("SELECT \"id\", \"name\", \"year\" FROM %q WHERE \"first\" = $1", tableName)
+	assert.Equal(t, expectedSQL, sql)
+	assert.NoError(t, err)
+	assert.Len(t, args, 1)
+	assert.Equal(t, 1, args[0])
+
+	sql, args, err = prepBuild.Where("first2").Equal(10).Where("second").Equal(20).ToSQLWithStmts()
+	expectedSQL = fmt.Sprintf("SELECT \"id\", \"name\", \"year\" FROM %q WHERE \"first2\" = $1 AND \"second\" = $2", tableName)
+	assert.Equal(t, expectedSQL, sql)
+	assert.NoError(t, err)
+	assert.Len(t, args, 2)
+	assert.Equal(t, 10, args[0])
+	assert.Equal(t, 20, args[1])
+}
+
 //
 //func TestSelectV2CustomTag(t *testing.T) {
 //	const tableName = "tableName"
