@@ -24,7 +24,7 @@ func TestPGUpdate(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, expectedSQL, sql)
 		require.Len(t, args, 1)
-		assert.Equal(t, args[0], "go")
+		assert.Equal(t, "go", args[0])
 	})
 
 	t.Run("update multiple fields for all records", func(t *testing.T) {

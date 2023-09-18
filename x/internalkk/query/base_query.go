@@ -30,9 +30,13 @@ type queryBuilder struct {
 	orderBys []*Order
 
 	// update.
-	only       bool
-	returning  []identity.Identity
-	fieldValue []filedValue
+	only      bool
+	returning []identity.Identity
+	//fieldValue []filedValue
+
+	// insert.
+	fields []identity.Identity
+	values []any
 
 	err           error
 	indentBuilder *identity.Builder
@@ -68,7 +72,7 @@ func (qb *queryBuilder) collect(p any) {
 	}
 
 	switch q := p.(type) {
-	case Select, Update, *Delete:
+	case Select, Update, *Delete, Insert:
 		return
 	case *SelectCore:
 		qb.indentBuilder = q.indentBuilder
@@ -86,6 +90,9 @@ func (qb *queryBuilder) collect(p any) {
 	case *DeleteCore:
 		qb.indentBuilder = q.indentBuilder
 		qb.table = qb.indentBuilder.Ident(q.table)
+	case *InsertCore:
+		qb.indentBuilder = q.indentBuilder
+		qb.table = qb.indentBuilder.Ident(q.table)
 	case *Where:
 		qb.wheres = append(qb.wheres, q)
 	case *Offset:
@@ -96,8 +103,11 @@ func (qb *queryBuilder) collect(p any) {
 		qb.orderBys = append(qb.orderBys, q)
 	case *Only:
 		qb.only = true
-	case *updateSetValue:
-		qb.fieldValue = append(qb.fieldValue, q.fvs...)
+	case *setValue:
+		for i := range q.fvs {
+			qb.fields = append(qb.fields, qb.indentBuilder.Ident(q.fvs[i].field))
+			qb.values = append(qb.values, q.fvs[i].value)
+		}
 	case *Returning:
 		qb.returning = append(qb.returning, qb.indentBuilder.Idents(q.rets...)...)
 	default:

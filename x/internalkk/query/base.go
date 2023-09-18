@@ -78,10 +78,13 @@ func (b BaseBuilder) DeleteFrom(tableName string) *Delete {
 	return &Delete{child{parent: &dc}}
 }
 
-//func (b BaseBuilder) InsertInto(tableName string) Insert {
-//	i := Insert{
-//		baseQuery: b.bq,
-//	}
-//	i.setTable(tableName)
-//	return i
-//}
+func (b BaseBuilder) InsertInto(tableName string) *Insert {
+	i := InsertCore{
+		core:  core{indentBuilder: b.bq.indentBuilder},
+		table: tableName,
+	}
+
+	return &Insert{
+		child: child{parent: &i},
+	}
+}

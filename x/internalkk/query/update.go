@@ -3,8 +3,6 @@ package query
 import (
 	"fmt"
 	"strings"
-
-	"github.com/rembosk8/query-builder-go/x/internalkk/identity"
 )
 
 type UpdateCore struct {
@@ -13,27 +11,16 @@ type UpdateCore struct {
 	table string
 }
 
-type updateSetValue struct {
+type setValue struct {
 	child
 
 	// todo: impl filedValue struct and make it possible to set many at one call
+	//  or, may be one entity one value could be better, need to check.
 	fvs []filedValue
 }
 
-func (uc *UpdateCore) Set(field string, value any) *Update {
-	usv := updateSetValue{
-		child: child{parent: uc},
-		fvs: []filedValue{{
-			field: field,
-			value: value,
-		}},
-	}
-
-	return &Update{child{parent: &usv}}
-}
-
 func (u Update) Set(field string, value any) *Update {
-	usv := updateSetValue{
+	usv := setValue{
 		child: child{parent: u.parent},
 		fvs: []filedValue{{
 			field: field,
@@ -45,20 +32,20 @@ func (u Update) Set(field string, value any) *Update {
 }
 
 type filedValue struct {
-	field identity.Identity
-	value identity.Value
+	field string
+	value any
 }
 
-func (f *filedValue) String(idb *identity.Builder) string {
-	return fmt.Sprintf("%s = %s", idb.Ident(f.field), idb.Value(f.value))
-}
-
-func (f *filedValue) StringStmt(idb *identity.Builder, i uint16) (sql string, v any) {
-	if idb.IsStandard(f.value) {
-		return f.String(idb), nil
-	}
-	return fmt.Sprintf("%s = $%d", idb.Ident(f.field), i), f.value
-}
+//func (f *filedValue) String(idb *identity.Builder) string {
+//	return fmt.Sprintf("%s = %s", idb.Ident(f.field), idb.Value(f.value))
+//}
+//
+//func (f *filedValue) StringStmt(idb *identity.Builder, i uint16) (sql string, v any) {
+//	if idb.IsStandard(f.value) {
+//		return f.String(idb), nil
+//	}
+//	return fmt.Sprintf("%s = $%d", idb.Ident(f.field), i), f.value
+//}
 
 type Update struct {
 	child
@@ -157,15 +144,16 @@ func (qb *queryBuilder) buildSet() {
 		return
 	}
 
-	if len(qb.fieldValue) == 0 {
+	if len(qb.fields) == 0 {
 		qb.err = ErrUpdateValuesNotSet
 		return
 	}
 
-	_, qb.err = fmt.Fprint(qb.strBuilder, " SET ", qb.fieldValue[0].String(qb.indentBuilder))
+	//todo: try without format.
+	_, qb.err = fmt.Fprintf(qb.strBuilder, " SET %s = %s", qb.fields[0], qb.indentBuilder.Value(qb.values[0]))
 
-	for i := 1; i < len(qb.fieldValue); i++ {
-		_, qb.err = fmt.Fprint(qb.strBuilder, ", ", qb.fieldValue[i].String(qb.indentBuilder))
+	for i := 1; i < len(qb.fields); i++ {
+		_, qb.err = fmt.Fprintf(qb.strBuilder, ", %s = %s", qb.fields[i], qb.indentBuilder.Value(qb.values[i]))
 	}
 }
 
@@ -173,30 +161,27 @@ func (qb *queryBuilder) buildSetStmt() (args []any) {
 	if qb.err != nil {
 		return
 	}
-
-	if len(qb.fieldValue) == 0 {
+	if len(qb.fields) == 0 {
 		qb.err = ErrUpdateValuesNotSet
 		return nil
 	}
+	args = make([]any, 0, len(qb.fields))
 
-	var num uint16 = 1
-	args = make([]any, 0, len(qb.fieldValue))
+	_, qb.err = fmt.Fprint(qb.strBuilder, " SET ")
 
-	sql, v := qb.fieldValue[0].StringStmt(qb.indentBuilder, num)
-	if v != nil {
-		args = append(args, v)
-		num++
+	setStmt := func(i int) {
+		if qb.indentBuilder.IsStandard(qb.values[i]) {
+			_, qb.err = fmt.Fprintf(qb.strBuilder, "%s = %s", qb.fields[i], qb.values[i])
+			return
+		}
+		_, qb.err = fmt.Fprintf(qb.strBuilder, "%s = $%d", qb.fields[i], len(args)+1)
+		args = append(args, qb.values[i])
 	}
 
-	_, qb.err = fmt.Fprintf(qb.strBuilder, " SET %s", sql)
-
-	for i := 1; i < len(qb.fieldValue); i++ {
-		sql, v = qb.fieldValue[i].StringStmt(qb.indentBuilder, num)
-		if v != nil {
-			args = append(args, v)
-			num++
-		}
-		_, qb.err = fmt.Fprintf(qb.strBuilder, ", %s", sql)
+	setStmt(0)
+	for i := 1; i < len(qb.fields); i++ {
+		_, qb.err = fmt.Fprint(qb.strBuilder, ", ")
+		setStmt(i)
 	}
 
 	return args
