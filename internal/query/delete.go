@@ -2,91 +2,85 @@ package query
 
 import (
 	"fmt"
-
-	"github.com/rembosk8/query-builder-go/internal/helpers/stringer"
-	"github.com/rembosk8/query-builder-go/internal/identity"
 )
 
 type Delete struct {
-	baseQuery
-	only      bool
-	returning []identity.Identity
+	child
 }
 
-var _ sqler = &Delete{}
+type DeleteCore struct {
+	core
 
-func (d Delete) ToSQL() (sql string, err error) {
-	if err := d.initBuild(); err != nil {
-		return "", err
-	}
-	d.buildSQLPlain()
-
-	return d.strBuilder.String(), nil
+	table string
 }
 
-func (d Delete) ToSQLWithStmts() (sql string, args []any, err error) {
-	if err := d.initBuild(); err != nil {
-		return "", nil, err
-	}
-	args = d.buildPrepStatement()
+var _ Builder = &Delete{}
 
-	return d.strBuilder.String(), args, nil
+func (d *Delete) ToSQL() (sql string, err error) {
+	// todo: check receiver type
+	qb := qbInit(d)
+
+	qb.buildDeleteFrom()
+	qb.buildWhere()
+	qb.buildReturning()
+
+	return qb.strBuilder.String(), qb.err
 }
 
-func (d Delete) Only() Delete {
-	d.only = true
-	return d
+func (d *Delete) ToSQLWithStmts() (sql string, args []any, err error) {
+	qb := qbInit(d)
+
+	qb.buildDeleteFrom()
+	args = qb.buildWherePrepStmt(args)
+	qb.buildReturning()
+
+	return qb.SqlStmts(args)
 }
 
-func (d Delete) Where(field string) wherePart[*Delete] { //nolint:revive
-	return wherePart[*Delete]{
-		column: d.ident(field),
-		b:      &d,
-	}
-}
-
-func (d Delete) Returning(fields ...string) Delete {
-	for _, f := range fields {
-		d.returning = append(d.returning, d.ident(f))
-	}
+func (d *Delete) Only() *Delete {
+	o := Only{child{parent: d.parent}}
+	d.parent = &o
 
 	return d
 }
 
-func (d *Delete) buildDeleteFrom() {
-	if d.err != nil {
+func (d *Delete) Where(field string) *WherePart[*Delete] {
+	// todo: check heap move
+	w := Where{
+		child: child{parent: d.parent},
+		field: field,
+	}
+
+	d.parent = &w
+
+	return &WherePart[*Delete]{
+		b:     d,
+		Where: &w,
+	}
+}
+
+func (d *Delete) Returning(fields ...string) *Delete {
+	if len(fields) == 0 {
+		return d
+	}
+	r := Returning{
+		child: child{parent: d.parent},
+		rets:  fields,
+	}
+
+	d.parent = &r
+
+	return d
+}
+
+func (qb *queryBuilder) buildDeleteFrom() {
+	if qb.err != nil {
 		return
 	}
 
 	upd := "DELETE FROM "
-	if d.only {
+	if qb.only {
 		upd += "ONLY "
 	}
-	_, d.err = fmt.Fprint(d.strBuilder, upd, d.table.String())
-}
-
-func (d Delete) buildSQLPlain() {
-	d.buildDeleteFrom()
-	d.buildWhere()
-	d.buildReturning()
-}
-
-func (d Delete) buildPrepStatement() (args []any) {
-	d.buildDeleteFrom()
-	args = d.buildWherePrepStmt(args)
-	d.buildReturning()
-
-	return
-}
-
-func (d *Delete) buildReturning() {
-	if d.err != nil {
-		return
-	}
-
-	if len(d.returning) == 0 {
-		return
-	}
-
-	_, d.err = fmt.Fprintf(d.strBuilder, " RETURNING %s", stringer.Join(d.returning, ", "))
+	_, qb.err = fmt.Fprint(qb.strBuilder, upd, qb.table)
 }

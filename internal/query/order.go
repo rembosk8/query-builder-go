@@ -9,47 +9,35 @@ import (
 type OrderType uint8
 
 const (
-	DESC OrderType = iota
+	DESC OrderType = iota + 1
 	ASC
 )
 
-type orderPart struct {
-	column identity.Identity
-	s      Select
-}
-
-func (op orderPart) Desc() Select {
-	op.s.orderBys = append(op.s.orderBys, Order{
-		field: op.column,
-		order: DESC,
-	})
-
-	return op.s
-}
-
-func (op orderPart) Asc() Select {
-	op.s.orderBys = append(op.s.orderBys, Order{
-		field: op.column,
-		order: ASC,
-	})
-
-	return op.s
-}
-
 type Order struct {
-	field identity.Identity
+	child
+	field string
 	order OrderType
 }
 
-func (o Order) String() string {
+func (o *Order) String(idb *identity.Builder) string {
 	switch o.order {
 	case DESC:
-		return fmt.Sprintf("%s DESC", o.field.String())
+		return fmt.Sprintf("%s DESC", idb.Ident(o.field))
 	case ASC:
-		return fmt.Sprintf("%s ASC", o.field.String())
+		return fmt.Sprintf("%s ASC", idb.Ident(o.field))
 	default:
 		panic("invalid order type")
 	}
 }
 
-var _ fmt.Stringer = &Order{}
+func (o *Order) Desc() *Select {
+	o.order = DESC
+
+	return &Select{child{parent: o}}
+}
+
+func (o *Order) Asc() *Select {
+	o.order = ASC
+
+	return &Select{child{parent: o}}
+}

@@ -4,112 +4,105 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/rembosk8/query-builder-go/internal/helpers/stringer"
-	"github.com/rembosk8/query-builder-go/internal/identity"
 )
 
-type Insert struct {
-	baseQuery
+type InsertCore struct {
+	core
 
-	fields []identity.Identity
-	values []identity.Value
+	table string
 }
 
-var _ sqler = &Insert{}
+type Insert struct {
+	child
+}
+
+var _ Builder = &Insert{}
 
 func (i Insert) ToSQL() (sql string, err error) {
-	if err := i.initBuild(); err != nil {
-		return "", err
-	}
-	i.buildSQLPlain()
+	qb := qbInit(i)
+	qb.buildInsertInto()
+	qb.buildValues()
 
-	return i.strBuilder.String(), nil
+	return qb.Sql()
 }
 
 func (i Insert) ToSQLWithStmts() (sql string, args []any, err error) {
-	if err := i.initBuild(); err != nil {
-		return "", nil, err
+	qb := qbInit(i)
+	qb.buildInsertInto()
+	args = qb.buildValueStmts()
+
+	return qb.SqlStmts(args)
+}
+
+func (i Insert) Set(field string, value any) *Insert {
+	sv := setValue{
+		child: child{parent: i.parent},
+		fvs: []filedValue{{
+			field: field,
+			value: value,
+		}},
 	}
-	args = i.buildPrepStatement()
 
-	return i.strBuilder.String(), args, nil
+	i.parent = &sv
+
+	return &i
 }
 
-func (i Insert) Set(field string, value any) Insert {
-	i.fields = append(i.fields, i.ident(field))
-	i.values = append(i.values, i.value(value))
-
-	return i
-}
-
-func (i *Insert) buildSQLPlain() {
-	i.buildInsertInto()
-	i.buildValues()
-}
-
-func (i *Insert) buildPrepStatement() (args []any) {
-	i.buildInsertInto()
-	args = i.buildValueStmts()
-	return
-}
-
-func (i *Insert) buildInsertInto() {
-	if i.err != nil {
+func (qb *queryBuilder) buildInsertInto() {
+	if qb.err != nil {
 		return
 	}
 
-	_, i.err = fmt.Fprint(i.strBuilder, "INSERT INTO ", i.table.String())
+	_, qb.err = fmt.Fprint(qb.strBuilder, "INSERT INTO ", qb.table)
 }
 
-func (i *Insert) buildDefaultValues() {
-	_, i.err = fmt.Fprintf(
-		i.strBuilder,
+func (qb *queryBuilder) buildDefaultValues() {
+	_, qb.err = fmt.Fprintf(
+		qb.strBuilder,
 		" DEFAULT VALUES",
 	)
 }
 
-func (i *Insert) buildValues() {
-	if i.err != nil {
+func (qb *queryBuilder) buildValues() {
+	if qb.err != nil {
 		return
 	}
 
-	if len(i.fields) == 0 {
-		i.buildDefaultValues()
+	if len(qb.fields) == 0 {
+		qb.buildDefaultValues()
 		return
 	}
 
-	_, i.err = fmt.Fprintf(
-		i.strBuilder,
+	_, qb.err = fmt.Fprintf(
+		qb.strBuilder,
 		" (%s) VALUES (%s)",
-		stringer.Join(i.fields, ", "),
-		stringer.Join(i.values, ", "),
+		strings.Join(qb.fields, ", "),
+		strings.Join(qb.indentBuilder.Values(qb.values), ", "), //todo: check if it's possible to not use Values here
 	)
 }
 
-func (i *Insert) buildValueStmts() (args []any) {
-	if i.err != nil {
+func (qb *queryBuilder) buildValueStmts() (args []any) {
+	if qb.err != nil {
 		return
 	}
 
-	if len(i.fields) == 0 {
-		i.buildDefaultValues()
+	if len(qb.fields) == 0 {
+		qb.buildDefaultValues()
 		return
 	}
 
-	numSlice := make([]string, len(i.values))
-	args = make([]any, len(i.values))
-	for j, v := range i.values {
+	// todo: check if it's possible to not to make an extra slice.
+	numSlice := make([]string, len(qb.values))
+	for j := range qb.values {
 		numSlice[j] = "$" + strconv.Itoa(j+1)
-		args[j] = v.Value
 	}
 
-	_, i.err = fmt.Fprintf(
-		i.strBuilder,
+	_, qb.err = fmt.Fprintf(
+		qb.strBuilder,
 		" (%s) VALUES (%s)",
-		stringer.Join(i.fields, ", "),
+		strings.Join(qb.fields, ", "),
 		strings.Join(numSlice, ", "),
 	)
 
-	return args
+	return qb.values
 }

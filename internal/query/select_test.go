@@ -6,9 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/rembosk8/query-builder-go/builder/pg"
-	"github.com/rembosk8/query-builder-go/internal/query"
 )
 
 func TestPGSelect(t *testing.T) {
@@ -271,33 +268,34 @@ func TestSelectReusage(t *testing.T) {
 	assert.Equal(t, 20, args[1])
 }
 
-func TestSelectV2CustomTag(t *testing.T) {
-	const tableName = "tableName"
-	qb := query.New(query.WithIdentityBuilder(pg.IndentBuilder()), query.WithStructAnnotationTag("myTag"))
-
-	t.Run("select v2 with custom ident tag", func(t *testing.T) {
-		type tableModelWithAnnotation struct {
-			ID   string `myTag:"id_a"`
-			Name string `myTag:"name_a"`
-		}
-		m := tableModelWithAnnotation{}
-		sql, args, err := qb.SelectV2(&m).From(tableName).ToSQLWithStmts()
-		expectedSQL := `SELECT "id_a", "name_a" FROM "tableName"`
-		assert.NoError(t, err)
-		assert.Equal(t, expectedSQL, sql)
-		assert.Len(t, args, 0)
-	})
-	t.Run("select v2 without tags", func(t *testing.T) {
-		type tableModel struct {
-			ID       string
-			LastName string
-		}
-
-		m2 := tableModel{}
-		sql, args, err := qb.SelectV2(&m2).From(tableName).ToSQLWithStmts()
-		expectedSQL := `SELECT "id", "last_name" FROM "tableName"`
-		assert.NoError(t, err)
-		assert.Equal(t, expectedSQL, sql)
-		assert.Len(t, args, 0)
-	})
-}
+//
+//func TestSelectV2CustomTag(t *testing.T) {
+//	const tableName = "tableName"
+//	qb := query.New(query.WithIdentityBuilder(pg.IndentBuilder()), query.WithStructAnnotationTag("myTag"))
+//
+//	t.Run("select v2 with custom ident tag", func(t *testing.T) {
+//		type tableModelWithAnnotation struct {
+//			ID   string `myTag:"id_a"`
+//			Name string `myTag:"name_a"`
+//		}
+//		m := tableModelWithAnnotation{}
+//		sql, args, err := qb.SelectV2(&m).From(tableName).ToSQLWithStmts()
+//		expectedSQL := `SELECT "id_a", "name_a" FROM "tableName"`
+//		assert.NoError(t, err)
+//		assert.Equal(t, expectedSQL, sql)
+//		assert.Len(t, args, 0)
+//	})
+//	t.Run("select v2 without tags", func(t *testing.T) {
+//		type tableModel struct {
+//			ID       string
+//			LastName string
+//		}
+//
+//		m2 := tableModel{}
+//		sql, args, err := qb.SelectV2(&m2).From(tableName).ToSQLWithStmts()
+//		expectedSQL := `SELECT "id", "last_name" FROM "tableName"`
+//		assert.NoError(t, err)
+//		assert.Equal(t, expectedSQL, sql)
+//		assert.Len(t, args, 0)
+//	})
+//}

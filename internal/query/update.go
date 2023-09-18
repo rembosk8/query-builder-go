@@ -2,166 +2,206 @@ package query
 
 import (
 	"fmt"
-
-	"github.com/rembosk8/query-builder-go/internal/helpers/stringer"
-	"github.com/rembosk8/query-builder-go/internal/identity"
+	"strings"
 )
 
-var _ fmt.Stringer = &filedValue{}
+type UpdateCore struct {
+	core
+
+	table string
+}
+
+type setValue struct {
+	child
+
+	// todo: impl filedValue struct and make it possible to set many at one call
+	//  or, may be one entity one value could be better, need to check.
+	fvs []filedValue
+}
+
+func (u Update) Set(field string, value any) *Update {
+	usv := setValue{
+		child: child{parent: u.parent},
+		fvs: []filedValue{{
+			field: field,
+			value: value,
+		}},
+	}
+
+	return &Update{child{parent: &usv}}
+}
 
 type filedValue struct {
-	field identity.Identity
-	value identity.Value
+	field string
+	value any
 }
 
-func (f filedValue) String() string {
-	return fmt.Sprintf("%s = %s", f.field.String(), f.value.String())
-}
-
-func (f filedValue) StringStmt(i uint16) (sql string, v any) {
-	if f.value.IsStandard() {
-		return f.String(), nil
-	}
-	return fmt.Sprintf("%s = $%d", f.field.String(), i), f.value.Value
-}
+//func (f *filedValue) String(idb *identity.Builder) string {
+//	return fmt.Sprintf("%s = %s", idb.Ident(f.field), idb.Value(f.value))
+//}
+//
+//func (f *filedValue) StringStmt(idb *identity.Builder, i uint16) (sql string, v any) {
+//	if idb.IsStandard(f.value) {
+//		return f.String(idb), nil
+//	}
+//	return fmt.Sprintf("%s = $%d", idb.Ident(f.field), i), f.value
+//}
 
 type Update struct {
-	baseQuery
-
-	fieldValue []filedValue
-	returning  []identity.Identity
-	only       bool
+	child
 }
 
-var _ sqler = &Update{}
+var _ Builder = &Update{}
 
 func (u Update) ToSQL() (sql string, err error) {
-	if err := u.initBuild(); err != nil {
-		return "", err
-	}
-	u.buildSQLPlain()
+	qb := qbInit(u)
+	u.Parent()
 
-	return u.strBuilder.String(), nil
+	qb.buildUpdateTable()
+	qb.buildSet()
+	qb.buildWhere()
+	qb.buildReturning()
+
+	return qb.strBuilder.String(), qb.err
 }
+
+var _ parenter = Update{}
 
 func (u Update) ToSQLWithStmts() (sql string, args []any, err error) {
-	if err := u.initBuild(); err != nil {
-		return "", nil, err
+	qb := qbInit(u)
+	args = qb.buildPrepStatement()
+
+	return qb.strBuilder.String(), args, nil
+}
+
+func (u Update) Where(field string) *WherePart[*Update] { //nolint:revive
+	// todo: check heap move
+	w := Where{
+		child: child{parent: u.parent},
+		field: field,
 	}
-	args = u.buildPrepStatement()
 
-	return u.strBuilder.String(), args, nil
-}
+	u.parent = &w
 
-func (u Update) Set(field string, value any) Update {
-	u.fieldValue = append(u.fieldValue, filedValue{
-		field: u.ident(field),
-		value: u.value(value),
-	})
-	return u
-}
-
-func (u Update) Where(columnName string) wherePart[*Update] { //nolint:revive
-	return wherePart[*Update]{
-		column: u.ident(columnName),
-		b:      &u,
+	return &WherePart[*Update]{
+		b:     &u,
+		Where: &w,
 	}
 }
 
-func (u Update) Only() Update {
-	u.only = true
-	return u
+type Only struct {
+	child
 }
 
-func (u Update) Returning(fields ...string) Update {
-	for _, f := range fields {
-		u.returning = append(u.returning, u.ident(f))
+func (u Update) Only() *Update {
+	only := Only{child{parent: u.parent}}
+	u.parent = &only
+	return &u
+}
+
+type Returning struct {
+	child
+
+	rets []string
+}
+
+func (u Update) Returning(fields ...string) *Update {
+	if len(fields) == 0 {
+		return &u
+	}
+	r := Returning{
+		child: child{parent: u.parent},
+		rets:  fields,
 	}
 
-	return u
+	u.parent = &r
+
+	return &u
 }
 
-func (u *Update) buildSQLPlain() {
-	u.buildUpdateTable()
-	u.buildSet()
-	u.buildWhere()
-	u.buildReturning()
-}
-
-func (u *Update) buildPrepStatement() (args []any) {
-	u.buildUpdateTable()
-	args = u.buildSetStmt()
-	args = u.buildWherePrepStmt(args)
-	u.buildReturning()
+func (qb *queryBuilder) buildPrepStatement() (args []any) {
+	qb.buildUpdateTable()
+	args = qb.buildSetStmt()
+	args = qb.buildWherePrepStmt(args)
+	qb.buildReturning()
 	return
 }
 
-func (u *Update) buildUpdateTable() {
-	if u.err != nil {
+func (qb *queryBuilder) buildUpdateTable() {
+	if qb.err != nil {
 		return
 	}
 
 	upd := "UPDATE "
-	if u.only {
+	if qb.only {
 		upd += "ONLY "
 	}
-	_, u.err = fmt.Fprint(u.strBuilder, upd, u.table.String())
+	_, qb.err = fmt.Fprint(qb.strBuilder, upd, qb.table)
 }
 
-func (u *Update) buildSet() {
-	if u.err != nil {
+func (qb *queryBuilder) buildSet() {
+	if qb.err != nil {
 		return
 	}
 
-	if len(u.fieldValue) == 0 {
-		u.err = ErrUpdateValuesNotSet
+	if len(qb.fields) == 0 {
+		qb.err = ErrUpdateValuesNotSet
 		return
 	}
 
-	_, u.err = fmt.Fprintf(u.strBuilder, " SET %s", stringer.Join(u.fieldValue, ", "))
+	//todo: try without format.
+	_, qb.err = fmt.Fprintf(qb.strBuilder, " SET %s = %s", qb.fields[0], qb.indentBuilder.Value(qb.values[0]))
+
+	for i := 1; i < len(qb.fields); i++ {
+		_, qb.err = fmt.Fprintf(qb.strBuilder, ", %s = %s", qb.fields[i], qb.indentBuilder.Value(qb.values[i]))
+	}
 }
 
-func (u *Update) buildSetStmt() (args []any) {
-	if u.err != nil {
+func (qb *queryBuilder) buildSetStmt() (args []any) {
+	if qb.err != nil {
 		return
 	}
-
-	if len(u.fieldValue) == 0 {
-		u.err = ErrUpdateValuesNotSet
+	if len(qb.fields) == 0 {
+		qb.err = ErrUpdateValuesNotSet
 		return nil
 	}
+	args = make([]any, 0, len(qb.fields))
 
-	var num uint16 = 1
-	args = make([]any, 0, len(u.fieldValue))
+	_, qb.err = fmt.Fprint(qb.strBuilder, " SET ")
 
-	sql, v := u.fieldValue[0].StringStmt(num)
-	if v != nil {
-		args = append(args, v)
-		num++
+	setStmt := func(i int) {
+		if qb.indentBuilder.IsStandard(qb.values[i]) {
+			_, qb.err = fmt.Fprintf(qb.strBuilder, "%s = %s", qb.fields[i], qb.values[i])
+			return
+		}
+		_, qb.err = fmt.Fprintf(qb.strBuilder, "%s = $%d", qb.fields[i], len(args)+1)
+		args = append(args, qb.values[i])
 	}
 
-	_, u.err = fmt.Fprintf(u.strBuilder, " SET %s", sql)
-
-	for i := 1; i < len(u.fieldValue); i++ {
-		sql, v = u.fieldValue[i].StringStmt(num)
-		if v != nil {
-			args = append(args, v)
-			num++
-		}
-		_, u.err = fmt.Fprintf(u.strBuilder, ", %s", sql)
+	setStmt(0)
+	for i := 1; i < len(qb.fields); i++ {
+		_, qb.err = fmt.Fprint(qb.strBuilder, ", ")
+		setStmt(i)
 	}
 
 	return args
 }
 
-func (u *Update) buildReturning() {
-	if u.err != nil {
+func (qb *queryBuilder) buildReturning() {
+	if len(qb.returning) == 0 {
+		return
+	}
+	if qb.err != nil {
 		return
 	}
 
-	if len(u.returning) == 0 {
-		return
-	}
+	_, qb.err = fmt.Fprint(
+		qb.strBuilder,
+		" RETURNING ",
+	)
 
-	_, u.err = fmt.Fprintf(u.strBuilder, " RETURNING %s", stringer.Join(u.returning, ", "))
+	_, qb.err = fmt.Fprint(
+		qb.strBuilder,
+		strings.Join(qb.returning, ", "),
+	)
 }

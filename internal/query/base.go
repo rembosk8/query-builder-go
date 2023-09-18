@@ -9,8 +9,6 @@ const (
 	all        = "*"
 )
 
-// todo: try to use parent *Query as in ctx
-
 type BaseBuilder struct {
 	bq baseQuery
 }
@@ -41,47 +39,52 @@ func New(opts ...Option) BaseBuilder {
 	}
 }
 
-func (b BaseBuilder) Select(fields ...string) Select {
-	s := Select{
-		baseQuery: b.bq,
+func (b BaseBuilder) Select(fields ...string) *SelectCore {
+	s := SelectCore{
+		core: core{indentBuilder: b.bq.indentBuilder},
 	}
 
-	for _, f := range fields {
-		s.fields = append(s.fields, s.indentBuilder.Indent(f))
-	}
+	s.fields = append(s.fields, fields...)
 
-	return s
+	return &s
 }
 
-func (b BaseBuilder) SelectV2(model any) Select {
-	s := Select{
-		baseQuery: b.bq,
-	}
-	s.addFieldsFromModel(model)
+//func (b BaseBuilder) SelectV2(model any) Select {
+//	s := Select{
+//		baseQuery: b.bq,
+//	}
+//	s.addFieldsFromModel(model)
+//
+//	return s
+//}
 
-	return s
+func (b BaseBuilder) Update(tableName string) *Update {
+	u := UpdateCore{
+		core: core{
+			indentBuilder: b.bq.indentBuilder,
+		},
+	}
+	u.table = tableName
+
+	return &Update{child{parent: &u}}
 }
 
-func (b BaseBuilder) Update(tableName string) Update {
-	u := Update{
-		baseQuery: b.bq,
+func (b BaseBuilder) DeleteFrom(tableName string) *Delete {
+	dc := DeleteCore{
+		core:  core{indentBuilder: b.bq.indentBuilder},
+		table: tableName,
 	}
-	u.setTable(tableName)
-	return u
+
+	return &Delete{child{parent: &dc}}
 }
 
-func (b BaseBuilder) DeleteFrom(tableName string) Delete {
-	u := Delete{
-		baseQuery: b.bq,
+func (b BaseBuilder) InsertInto(tableName string) *Insert {
+	i := InsertCore{
+		core:  core{indentBuilder: b.bq.indentBuilder},
+		table: tableName,
 	}
-	u.setTable(tableName)
-	return u
-}
 
-func (b BaseBuilder) InsertInto(tableName string) Insert {
-	i := Insert{
-		baseQuery: b.bq,
+	return &Insert{
+		child: child{parent: &i},
 	}
-	i.setTable(tableName)
-	return i
 }

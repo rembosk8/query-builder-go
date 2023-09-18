@@ -5,92 +5,178 @@ import (
 	"strings"
 
 	"github.com/rembosk8/query-builder-go/internal/helpers/pointer"
-	"github.com/rembosk8/query-builder-go/internal/helpers/stringer"
-	identity "github.com/rembosk8/query-builder-go/internal/identity"
+	identity2 "github.com/rembosk8/query-builder-go/internal/identity"
 )
 
-type sqler interface {
+type Builder interface {
 	ToSQL() (sql string, err error)
 	ToSQLWithStmts() (sql string, args []any, err error)
-
-	buildSQLPlain()
-	buildPrepStatement() (args []any)
 }
 
 type baseQuery struct {
-	table  *identity.Identity // from <table>
-	wheres []*Where
+	// todo :check what is needed.
 
-	err error
-
-	indentBuilder *identity.Builder
+	indentBuilder *identity2.Builder
 	strBuilder    *strings.Builder
 	tag           string
 }
 
-func (bq *baseQuery) setTable(tblName string) {
-	bq.table = pointer.To(bq.indentBuilder.Indent(tblName))
+type queryBuilder struct {
+	cols     []identity2.Identity
+	table    identity2.Identity
+	wheres   []*Where //todo: [][]Where or []OrWhere -> OrWhere{[]AndWhere}
+	offset   *uint
+	limit    *uint
+	orderBys []*Order
+	joins    []*Join
+
+	// update.
+	only      bool
+	returning []identity2.Identity
+	//fieldValue []filedValue
+
+	// insert.
+	fields []identity2.Identity
+	values []any
+
+	err           error
+	indentBuilder *identity2.Builder
+	strBuilder    *strings.Builder
+	//todo: try to add arena https://uptrace.dev/blog/golang-memory-arena.html
+	tag string
 }
 
-func (bq *baseQuery) initBuild() error {
-	if bq.err != nil {
-		return bq.err
+func (qb *queryBuilder) SqlStmts(args []any) (sql string, argsOut []any, err error) {
+	if qb.err != nil {
+		return "", nil, qb.err
 	}
-	if bq.table == nil {
-		return ErrTableNotSet
+
+	return qb.strBuilder.String(), args, nil
+}
+
+func (qb *queryBuilder) Sql() (sql string, err error) {
+	if qb.err != nil {
+		return "", qb.err
 	}
-	bq.strBuilder = new(strings.Builder)
 
-	return nil
+	return qb.strBuilder.String(), nil
 }
 
-func (bq *baseQuery) whereAdd(w *Where) {
-	bq.wheres = append(bq.wheres, w)
-}
+func (qb *queryBuilder) collect(p any) {
+	par, ok := p.(parenter)
+	if ok {
+		qb.collect(par.Parent())
+	}
 
-func (bq *baseQuery) value(v any) identity.Value {
-	return bq.indentBuilder.Value(v)
-}
-
-func (bq *baseQuery) ident(f string) identity.Identity {
-	return bq.indentBuilder.Indent(f)
-}
-
-func (bq *baseQuery) buildWhere() {
-	if bq.err != nil {
+	if par == nil {
 		return
 	}
-	if len(bq.wheres) == 0 {
+
+	switch q := p.(type) {
+	case Select, Update, *Delete, Insert:
 		return
+	case *SelectCore:
+		qb.indentBuilder = q.indentBuilder
+
+		if len(q.fields) > 0 {
+			qb.cols = make([]identity2.Identity, len(q.fields))
+			for i := range q.fields {
+				qb.cols[i] = qb.indentBuilder.Ident(q.fields[i])
+			}
+		}
+		qb.table = qb.indentBuilder.Ident(q.table)
+	case *Join:
+		qb.joins = append(qb.joins, q)
+	case *UpdateCore:
+		qb.indentBuilder = q.indentBuilder
+		qb.table = qb.indentBuilder.Ident(q.table)
+	case *DeleteCore:
+		qb.indentBuilder = q.indentBuilder
+		qb.table = qb.indentBuilder.Ident(q.table)
+	case *InsertCore:
+		qb.indentBuilder = q.indentBuilder
+		qb.table = qb.indentBuilder.Ident(q.table)
+	case *Where:
+		qb.wheres = append(qb.wheres, q)
+	case *Offset:
+		qb.offset = pointer.To(q.offset)
+	case *Limit:
+		qb.limit = pointer.To(q.limit)
+	case *Order:
+		qb.orderBys = append(qb.orderBys, q)
+	case *Only:
+		qb.only = true
+	case *setValue:
+		for i := range q.fvs {
+			qb.fields = append(qb.fields, qb.indentBuilder.Ident(q.fvs[i].field))
+			qb.values = append(qb.values, q.fvs[i].value)
+		}
+	case *Returning:
+		qb.returning = append(qb.returning, qb.indentBuilder.Idents(q.rets...)...)
+	default:
+		panic(fmt.Sprintf("wrong type in collect %T", p))
 	}
-	_, bq.err = fmt.Fprintf(bq.strBuilder, " WHERE %s", stringer.Join(bq.wheres, " AND ")) // todo: build AND and OR separately
 }
 
-func (bq *baseQuery) buildWherePrepStmt(args []any) []any {
-	if len(bq.wheres) == 0 {
-		return args
+func (qb *queryBuilder) getFields() string {
+	if len(qb.cols) == 0 {
+		return "*"
 	}
-	if bq.err != nil {
+
+	return strings.Join(qb.cols, ", ")
+}
+
+func (qb *queryBuilder) buildSelectFrom() {
+	if qb.err != nil {
+		return
+	}
+
+	_, qb.err = fmt.Fprintf(qb.strBuilder, "SELECT %s FROM %s", qb.getFields(), qb.table)
+	for _, j := range qb.joins {
+		if qb.err != nil {
+			return
+		}
+		_, qb.err = fmt.Fprint(qb.strBuilder, j.String(qb.indentBuilder))
+	}
+}
+
+func (qb *queryBuilder) buildWhere() {
+	if len(qb.wheres) == 0 {
+		return
+	}
+	strs := make([]string, len(qb.wheres))
+	for i := range qb.wheres {
+		strs[i] = qb.wheres[i].String(qb.indentBuilder)
+	}
+
+	_, qb.err = fmt.Fprintf(qb.strBuilder, " WHERE %s", strings.Join(strs, " AND ")) // todo: build AND and OR separately
+}
+
+func (qb *queryBuilder) buildWherePrepStmt(args []any) []any {
+	if qb.err != nil {
 		return nil
+	}
+	if len(qb.wheres) == 0 {
+		return args
 	}
 	var vals []any
 	cnt := len(args) + 1
 
-	_, bq.err = fmt.Fprint(bq.strBuilder, " WHERE ")
-	vals, bq.err = bq.wheres[0].PrepStmtString(cnt, bq.strBuilder)
-	if bq.err != nil {
+	_, qb.err = fmt.Fprint(qb.strBuilder, " WHERE ")
+	vals, qb.err = qb.wheres[0].PrepStmtString(cnt, qb.strBuilder, qb.indentBuilder)
+	if qb.err != nil {
 		return nil
 	}
 	args = append(args, vals...)
 
 	cnt += len(vals)
-	for i := 1; i < len(bq.wheres); i++ {
-		_, bq.err = fmt.Fprint(bq.strBuilder, " AND ")
-		if bq.err != nil {
+	for i := 1; i < len(qb.wheres); i++ {
+		_, qb.err = fmt.Fprint(qb.strBuilder, " AND ")
+		if qb.err != nil {
 			return nil
 		}
-		vals, bq.err = bq.wheres[i].PrepStmtString(cnt, bq.strBuilder)
-		if bq.err != nil {
+		vals, qb.err = qb.wheres[i].PrepStmtString(cnt, qb.strBuilder, qb.indentBuilder)
+		if qb.err != nil {
 			return nil
 		}
 		args = append(args, vals...)
@@ -98,4 +184,40 @@ func (bq *baseQuery) buildWherePrepStmt(args []any) []any {
 	}
 
 	return args
+}
+
+func (qb *queryBuilder) BuildOffset() {
+	if qb.err != nil {
+		return
+	}
+	if qb.offset == nil {
+		return
+	}
+
+	_, qb.err = fmt.Fprintf(qb.strBuilder, " OFFSET %d", *qb.offset)
+}
+
+func (qb *queryBuilder) BuildLimit() {
+	if qb.err != nil {
+		return
+	}
+	if qb.limit == nil {
+		return
+	}
+	_, qb.err = fmt.Fprintf(qb.strBuilder, " LIMIT %d", *qb.limit)
+}
+
+func (qb *queryBuilder) BuildOrderBy() {
+	if qb.err != nil {
+		return
+	}
+	if len(qb.orderBys) == 0 {
+		return
+	}
+	strs := make([]string, len(qb.orderBys))
+	for i := range qb.orderBys {
+		strs[i] = qb.orderBys[i].String(qb.indentBuilder)
+	}
+
+	_, qb.err = fmt.Fprintf(qb.strBuilder, " ORDER BY %s", strings.Join(strs, ", "))
 }

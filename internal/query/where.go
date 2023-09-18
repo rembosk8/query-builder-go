@@ -5,24 +5,25 @@ import (
 	"io"
 	"strings"
 
-	"github.com/rembosk8/query-builder-go/internal/helpers/stringer"
 	"github.com/rembosk8/query-builder-go/internal/identity"
 )
 
-type whereAdder interface {
-	whereAdd(where *Where)
-	value(v any) identity.Value
+type WherePart[T Builder] struct {
+	*Where
+	b T
 }
 
-type wherePart[T whereAdder] struct {
-	column identity.Identity
-	b      T
+type Where struct {
+	child
+	field string
+	cond  condition
+	value []any
 }
 
-type Condition int16
+type condition int16
 
 const (
-	eq Condition = iota
+	eq condition = iota
 	ne
 	le
 	lq
@@ -55,173 +56,164 @@ var conditionStrings = []string{ //nolint:gochecknoglobals
 	notLike:    "NOT LIKE",
 }
 
-func (c Condition) String() string {
+func (c condition) String() string {
 	return conditionStrings[c]
 }
 
-type Where struct {
-	field identity.Identity
-	value []identity.Value
-	cond  Condition
-}
-
-func (w *Where) String() string {
+func (w *Where) String(idBuilder *identity.Builder) string {
 	switch w.cond {
 	case eq, ne, le, lq, gt, gq, like, notLike:
-		return fmt.Sprintf("%s %s %s", w.field.String(), w.cond.String(), w.value[0].String())
+		return fmt.Sprintf("%s %s %s", idBuilder.Ident(w.field), w.cond.String(), idBuilder.Value(w.value[0]))
 	case in, notIn:
-		return fmt.Sprintf("%s %s (%s)", w.field.String(), w.cond.String(), stringer.Join(w.value, ", "))
+		return fmt.Sprintf("%s %s (%s)", idBuilder.Ident(w.field), w.cond.String(), strings.Join(idBuilder.Values(w.value), ", "))
 	case isNull, isNotNull:
-		return fmt.Sprintf("%s %s", w.field.String(), w.cond.String())
+		return fmt.Sprintf("%s %s", idBuilder.Ident(w.field), w.cond.String())
 	case between, notBetween:
-		return fmt.Sprintf("%s %s %s AND %s", w.field.String(), w.cond.String(), w.value[0].String(), w.value[1].String())
+		return fmt.Sprintf("%s %s %s AND %s", idBuilder.Ident(w.field), w.cond.String(), idBuilder.Value(w.value[0]), idBuilder.Value(w.value[1]))
 	}
 
 	panic("unknown where condition")
 }
 
-func (w *Where) PrepStmtString(num int, wr io.Writer) ([]any, error) {
-	vals := make([]any, len(w.value))
-	for i := range w.value {
-		vals[i] = w.value[i].Value
-	}
-
+func (w *Where) PrepStmtString(num int, wr io.Writer, idBuilder *identity.Builder) ([]any, error) {
 	switch w.cond {
 	case eq, ne, le, lq, gt, gq, like, notLike:
-		if _, err := fmt.Fprintf(wr, "%s %s $%d", w.field.String(), w.cond.String(), num); err != nil {
+		if _, err := fmt.Fprintf(wr, "%s %s $%d", idBuilder.Ident(w.field), w.cond.String(), num); err != nil {
 			return nil, fmt.Errorf("write into writer: %w", err)
 		}
-		return vals, nil
+		return w.value, nil
 	case in, notIn:
-		nums := make([]string, len(vals))
-		for i := range vals {
+		nums := make([]string, len(w.value))
+		for i := range w.value {
 			nums[i] = fmt.Sprintf("$%d", num)
 			num++
 		}
-		if _, err := fmt.Fprintf(wr, "%s %s (%s)", w.field.String(), w.cond.String(), strings.Join(nums, ", ")); err != nil {
+		if _, err := fmt.Fprintf(wr, "%s %s (%s)", idBuilder.Ident(w.field), w.cond.String(), strings.Join(nums, ", ")); err != nil {
 			return nil, fmt.Errorf("write into writer: %w", err)
 		}
 
-		return vals, nil
+		return w.value, nil
 	case isNull, isNotNull:
-		if _, err := fmt.Fprintf(wr, "%s %s", w.field.String(), w.cond.String()); err != nil {
+		if _, err := fmt.Fprintf(wr, "%s %s", idBuilder.Ident(w.field), w.cond.String()); err != nil {
 			return nil, fmt.Errorf("write into writer: %w", err)
 		}
 
 		return nil, nil
 	case between, notBetween:
-		nums := make([]string, len(vals))
-		for i := range vals {
+		nums := make([]string, len(w.value))
+		for i := range w.value {
 			nums[i] = fmt.Sprintf("$%d", num)
 			num++
 		}
 
-		if _, err := fmt.Fprintf(wr, "%s %s %s AND %s", w.field.String(), w.cond.String(), nums[0], nums[1]); err != nil {
+		if _, err := fmt.Fprintf(wr, "%s %s %s AND %s", idBuilder.Ident(w.field), w.cond.String(), nums[0], nums[1]); err != nil {
 			return nil, fmt.Errorf("write into writer: %w", err)
 		}
 
-		return vals, nil
+		return w.value, nil
 	}
 
 	panic("unknown where condition")
 }
 
-func (wp wherePart[T]) Equal(v any) T {
-	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: eq})
+func (w *WherePart[T]) Equal(v any) T {
+	w.Where.cond = eq
+	w.Where.value = []any{v}
 
-	return wp.b
+	return w.b
 }
 
-func (wp wherePart[T]) NotEqual(v any) T {
-	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: ne})
+func (w *WherePart[T]) NotEqual(v any) T {
+	w.Where.cond = ne
+	w.Where.value = []any{v}
 
-	return wp.b
+	return w.b
 }
 
-func (wp wherePart[T]) Less(v any) T {
-	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: le})
+func (w *WherePart[T]) Less(v any) T {
+	w.Where.cond = le
+	w.Where.value = []any{v}
 
-	return wp.b
+	return w.b
 }
 
-func (wp wherePart[T]) LessEqual(v any) T {
-	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: lq})
+func (w *WherePart[T]) LessEqual(v any) T {
+	w.Where.cond = lq
+	w.Where.value = []any{v}
 
-	return wp.b
+	return w.b
 }
 
-func (wp wherePart[T]) Greater(v any) T {
-	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: gt})
+func (w *WherePart[T]) Greater(v any) T {
+	w.Where.cond = gt
+	w.Where.value = []any{v}
 
-	return wp.b
+	return w.b
 }
 
-func (wp wherePart[T]) GreaterEqual(v any) T {
-	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(v)}, cond: gq})
+func (w *WherePart[T]) GreaterEqual(v any) T {
+	w.Where.cond = gq
+	w.Where.value = []any{v}
 
-	return wp.b
+	return w.b
 }
 
-func (wp wherePart[T]) In(vs ...any) T {
-	values := make([]identity.Value, len(vs))
-	for i := range vs {
-		values[i] = wp.b.value(vs[i])
+func (w *WherePart[T]) In(vs ...any) T {
+	w.Where.cond = in
+	w.Where.value = append(w.Where.value, vs...)
+
+	return w.b
+}
+
+func (w *WherePart[T]) NotIn(vs ...any) T {
+	w.Where.cond = notIn
+	w.Where.value = append(w.Where.value, vs...)
+
+	return w.b
+}
+
+func (w *WherePart[T]) IsNull() T {
+	w.Where.cond = isNull
+
+	return w.b
+}
+
+func (w *WherePart[T]) IsNotNull() T {
+	w.Where.cond = isNotNull
+
+	return w.b
+}
+
+func (w *WherePart[T]) Between(start, end any) T {
+	w.Where.value = []any{
+		start,
+		end,
 	}
-	wp.b.whereAdd(&Where{field: wp.column, value: values, cond: in})
+	w.Where.cond = between
 
-	return wp.b
+	return w.b
 }
 
-func (wp wherePart[T]) NotIn(vs ...any) T {
-	values := make([]identity.Value, len(vs))
-	for i := range vs {
-		values[i] = wp.b.value(vs[i])
+func (w *WherePart[T]) NotBetween(start, end any) T {
+	w.Where.value = []any{
+		start,
+		end,
 	}
-	wp.b.whereAdd(&Where{field: wp.column, value: values, cond: notIn})
+	w.Where.cond = notBetween
 
-	return wp.b
+	return w.b
 }
 
-func (wp wherePart[T]) IsNull() T {
-	wp.b.whereAdd(&Where{field: wp.column, value: nil, cond: isNull})
+func (w *WherePart[T]) Like(pattern string) T {
+	w.Where.cond = like
+	w.Where.value = []any{pattern}
 
-	return wp.b
+	return w.b
 }
 
-func (wp wherePart[T]) IsNotNull() T {
-	wp.b.whereAdd(&Where{field: wp.column, value: nil, cond: isNotNull})
+func (w *WherePart[T]) NotLike(pattern string) T {
+	w.Where.cond = notLike
+	w.Where.value = []any{pattern}
 
-	return wp.b
-}
-
-func (wp wherePart[T]) Between(start, end any) T {
-	values := []identity.Value{
-		wp.b.value(start),
-		wp.b.value(end),
-	}
-	wp.b.whereAdd(&Where{field: wp.column, value: values, cond: between})
-
-	return wp.b
-}
-
-func (wp wherePart[T]) NotBetween(start, end any) T {
-	values := []identity.Value{
-		wp.b.value(start),
-		wp.b.value(end),
-	}
-	wp.b.whereAdd(&Where{field: wp.column, value: values, cond: notBetween})
-
-	return wp.b
-}
-
-func (wp wherePart[T]) Like(pattern string) T {
-	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(pattern)}, cond: like})
-
-	return wp.b
-}
-
-func (wp wherePart[T]) NotLike(pattern string) T {
-	wp.b.whereAdd(&Where{field: wp.column, value: []identity.Value{wp.b.value(pattern)}, cond: notLike})
-
-	return wp.b
+	return w.b
 }
