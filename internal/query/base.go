@@ -15,11 +15,11 @@ type BaseBuilder struct {
 
 type Option func(b *baseQuery)
 
-func WithStructAnnotationTag(tag string) Option {
-	return func(b *baseQuery) {
-		b.tag = tag
-	}
-}
+//func WithStructAnnotationTag(tag string) Option {
+//	return func(b *baseQuery) {
+//		b.tag = tag
+//	}
+//}
 
 func WithIdentityBuilder(ib *identity.Builder) Option {
 	return func(b *baseQuery) {

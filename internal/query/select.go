@@ -160,11 +160,24 @@ func (s Select) Limit(n uint) *Select {
 	return &s
 }
 
-func (s Select) OrderBy(fieldName string) *Order { //nolint:revive
+func (s Select) OrderBy(fieldName string) *Order {
 	return &Order{
 		child: child{parent: s.parent},
 		field: fieldName,
 	}
+}
+
+type Or struct {
+	child
+}
+
+func (s Select) Or() *Select {
+	or := Or{child{
+		parent: s.parent,
+	}}
+
+	s.parent = &or
+	return &s
 }
 
 //func (s *Select) addFieldsFromModel(model any) {

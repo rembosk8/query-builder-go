@@ -34,7 +34,7 @@ func (d *Delete) ToSQLWithStmts() (sql string, args []any, err error) {
 	args = qb.buildWherePrepStmt(args)
 	qb.buildReturning()
 
-	return qb.SqlStmts(args)
+	return qb.SQLStmts(args)
 }
 
 func (d *Delete) Only() *Delete {

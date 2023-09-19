@@ -23,7 +23,7 @@ func (i Insert) ToSQL() (sql string, err error) {
 	qb.buildInsertInto()
 	qb.buildValues()
 
-	return qb.Sql()
+	return qb.SQL()
 }
 
 func (i Insert) ToSQLWithStmts() (sql string, args []any, err error) {
@@ -31,7 +31,7 @@ func (i Insert) ToSQLWithStmts() (sql string, args []any, err error) {
 	qb.buildInsertInto()
 	args = qb.buildValueStmts()
 
-	return qb.SqlStmts(args)
+	return qb.SQLStmts(args)
 }
 
 func (i Insert) Set(field string, value any) *Insert {

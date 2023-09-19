@@ -17,7 +17,6 @@ type baseQuery struct {
 	// todo :check what is needed.
 
 	indentBuilder *identity2.Builder
-	strBuilder    *strings.Builder
 	tag           string
 }
 
@@ -33,9 +32,8 @@ type queryBuilder struct {
 	// update.
 	only      bool
 	returning []identity2.Identity
-	//fieldValue []filedValue
 
-	// insert.
+	// insert or update.
 	fields []identity2.Identity
 	values []any
 
@@ -46,7 +44,7 @@ type queryBuilder struct {
 	tag string
 }
 
-func (qb *queryBuilder) SqlStmts(args []any) (sql string, argsOut []any, err error) {
+func (qb *queryBuilder) SQLStmts(args []any) (sql string, argsOut []any, err error) {
 	if qb.err != nil {
 		return "", nil, qb.err
 	}
@@ -54,7 +52,7 @@ func (qb *queryBuilder) SqlStmts(args []any) (sql string, argsOut []any, err err
 	return qb.strBuilder.String(), args, nil
 }
 
-func (qb *queryBuilder) Sql() (sql string, err error) {
+func (qb *queryBuilder) SQL() (sql string, err error) {
 	if qb.err != nil {
 		return "", qb.err
 	}
@@ -62,7 +60,7 @@ func (qb *queryBuilder) Sql() (sql string, err error) {
 	return qb.strBuilder.String(), nil
 }
 
-func (qb *queryBuilder) collect(p any) {
+func (qb *queryBuilder) collect(p any) { //nolint:cyclop
 	par, ok := p.(parenter)
 	if ok {
 		qb.collect(par.Parent())
