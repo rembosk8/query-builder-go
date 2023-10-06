@@ -75,7 +75,7 @@ func (w *Where) String(idBuilder *identity.Builder) string {
 	panic("unknown where condition")
 }
 
-const numsStr = "$1, $2, $3, $4, $5, $6, $7, $8, $9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39"
+const numsStr = " $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39"
 
 func getNums(s, cnt int) string {
 	if s == 0 {
@@ -83,9 +83,16 @@ func getNums(s, cnt int) string {
 	}
 	s--
 	start := s * 4
-	pos := start + (cnt-1)*4 + 2
+	pos := start + (cnt-1)*4 + 3
 
-	return numsStr[start:pos]
+	if s > 9 {
+		start += s - 9
+	}
+	if s+cnt > 9 {
+		pos += s + cnt - 9
+	}
+
+	return numsStr[start+1 : pos]
 }
 
 func (w *Where) PrepStmtString(num int, wr io.Writer, idBuilder *identity.Builder) ([]any, error) {

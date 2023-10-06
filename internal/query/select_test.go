@@ -187,8 +187,6 @@ func TestPGSelect(t *testing.T) {
 		prebuild := qb.Select("id", "name", "value").
 			From(tableName).
 			Where("id").Between(1, 10).
-			Where("name").NotBetween("first", "second").
-			Where("id").Between(1, 10).
 			Where("name").NotBetween("first", "second")
 
 		sql, err := prebuild.ToSQL()
