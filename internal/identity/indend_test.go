@@ -23,8 +23,8 @@ func TestBuilder_Build(t *testing.T) {
 
 	name := "table"
 
-	assert.Equal(t, fmt.Sprintf(sFormat, name), bdr.Indent(name).String())
+	assert.Equal(t, fmt.Sprintf(sFormat, name), bdr.Ident(name))
 
 	bdr = NewBuilder()
-	assert.Equal(t, name, bdr.Indent(name).String())
+	assert.Equal(t, name, bdr.Ident(name))
 }

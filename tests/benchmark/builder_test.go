@@ -5,15 +5,13 @@ import (
 	"time"
 
 	"github.com/rembosk8/query-builder-go/builder/pg"
-	"github.com/rembosk8/query-builder-go/internal/query"
+	"github.com/rembosk8/query-builder-go/query"
 )
-
-var preparedQuery query.Select
 
 func BenchmarkPGBuilder(b *testing.B) {
 	qb := pg.NewQueryBuilder()
 
-	getPrepBuild := func() query.Select {
+	getPrepBuild := func() *query.Select {
 		return qb.Select("one", "two", "three").
 			From("table 1").
 			Where("id").Equal(1).
@@ -21,7 +19,7 @@ func BenchmarkPGBuilder(b *testing.B) {
 			Where("count").Between(1, 100).
 			Limit(100).Offset(100)
 	}
-	preparedQuery = getPrepBuild()
+	preparedQuery := getPrepBuild()
 
 	b.Run("prepare query", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
@@ -52,7 +50,7 @@ func BenchmarkReflectSelect(b *testing.B) {
 	qb := pg.NewQueryBuilder()
 	m := testModel{}
 
-	prepFunc := func(model any) query.Select {
+	prepFunc := func(model any) *query.Select {
 		return qb.SelectV2(model).
 			From("table 1").
 			Where("id").Equal(1).
@@ -61,7 +59,7 @@ func BenchmarkReflectSelect(b *testing.B) {
 			Limit(100).Offset(100)
 	}
 
-	var bdr query.Select
+	var bdr *query.Select
 	for i := 0; i < b.N; i++ {
 		bdr = prepFunc(&m)
 	}

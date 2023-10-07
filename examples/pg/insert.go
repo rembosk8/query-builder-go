@@ -31,4 +31,5 @@ func insert() {
 
 	fmt.Println("List of arguments for placeholders: ")
 	fmt.Println(args...)
+
 }

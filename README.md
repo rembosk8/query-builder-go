@@ -19,7 +19,7 @@ List of arguments for placeholders:
 "John" "1989"
 ```
 
-## Where [example](internal/query/where_test.go)
+## Where [example](query/where_test.go)
 Support the following operators:
 
 ```go
