@@ -15,11 +15,11 @@ type BaseBuilder struct {
 
 type Option func(b *baseQuery)
 
-//func WithStructAnnotationTag(tag string) Option {
-//	return func(b *baseQuery) {
-//		b.tag = tag
-//	}
-//}
+func WithStructAnnotationTag(tag string) Option {
+	return func(b *baseQuery) {
+		b.tag = tag
+	}
+}
 
 func WithIdentityBuilder(ib *identity.Builder) Option {
 	return func(b *baseQuery) {
@@ -50,14 +50,15 @@ func (b BaseBuilder) Select(fields ...string) *SelectCore {
 	return &s
 }
 
-//func (b BaseBuilder) SelectV2(model any) Select {
-//	s := Select{
-//		baseQuery: b.bq,
-//	}
-//	s.addFieldsFromModel(model)
-//
-//	return s
-//}
+// SelectV2 experimental method, the name could be changed later.
+func (b BaseBuilder) SelectV2(model any) *SelectCore {
+	s := SelectCore{
+		core: core{indentBuilder: b.bq.indentBuilder},
+	}
+	s.addFieldsFromModel(model)
+
+	return &s
+}
 
 func (b BaseBuilder) Update(tableName string) *Update {
 	u := UpdateCore{

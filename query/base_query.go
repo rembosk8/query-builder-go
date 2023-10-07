@@ -41,7 +41,6 @@ type queryBuilder struct {
 	indentBuilder *identity2.Builder
 	strBuilder    *strings.Builder
 	//todo: try to add arena https://uptrace.dev/blog/golang-memory-arena.html
-	// tag string
 }
 
 func (qb *queryBuilder) SQLStmts(args []any) (sql string, argsOut []any, err error) {

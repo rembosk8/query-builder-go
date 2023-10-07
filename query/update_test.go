@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rembosk8/query-builder-go/internal/query"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/rembosk8/query-builder-go/query"
 )
 
+//nolint:funlen
 func TestPGUpdate(t *testing.T) {
 	const tableName = "tableName"
 

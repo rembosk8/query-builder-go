@@ -1,8 +1,10 @@
 package query
 
 import (
+	"reflect"
 	"strings"
 
+	"github.com/rembosk8/query-builder-go/internal/helpers/stringer"
 	"github.com/rembosk8/query-builder-go/internal/identity"
 )
 
@@ -49,6 +51,7 @@ var _ selecter = &Select{}
 type core struct {
 	child
 	indentBuilder *identity.Builder
+	//err           error
 }
 
 func qbInit(c any) *queryBuilder { //todo: check how to replace 'any'
@@ -181,17 +184,18 @@ func (s Select) Or() *Select {
 	return &s
 }
 
-//func (s *Select) addFieldsFromModel(model any) {
-//	rt := reflect.TypeOf(model).Elem()
-//	if rt.Kind() != reflect.Struct {
-//		s.err = fmt.Errorf("incorrect type of model %s: %w", rt.Kind().String(), ErrValidation)
-//		return
-//	}
-//	for i := 0; i < rt.NumField(); i++ {
-//		f, ok := rt.Field(i).Tag.Lookup(s.tag)
-//		if !ok {
-//			f = stringer2.SnakeCase(rt.Field(i).Name)
-//		}
-//		s.fields = append(s.fields, s.indentBuilder.Ident(f))
-//	}
-//}
+func (s *SelectCore) addFieldsFromModel(model any) {
+	rt := reflect.TypeOf(model).Elem()
+	if rt.Kind() != reflect.Struct {
+		// todo: return back
+		//s.err = fmt.Errorf("incorrect type of model %s: %w", rt.Kind().String(), ErrValidation)
+		return
+	}
+	for i := 0; i < rt.NumField(); i++ {
+		f, ok := rt.Field(i).Tag.Lookup(defaultTag)
+		if !ok {
+			f = stringer.SnakeCase(rt.Field(i).Name)
+		}
+		s.fields = append(s.fields, s.indentBuilder.Ident(f))
+	}
+}
