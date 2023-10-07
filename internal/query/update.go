@@ -14,9 +14,9 @@ type UpdateCore struct {
 type setValue struct {
 	child
 
-	// todo: impl filedValue struct and make it possible to set many at one call
+	// todo: impl FiledValue struct and make it possible to set many at one call
 	//  or, may be one entity one value could be better, need to check.
-	fvs []filedValue
+	fvs []FiledValue
 }
 
 type Update struct {
@@ -26,7 +26,7 @@ type Update struct {
 func (u Update) Set(field string, value any) *Update {
 	usv := setValue{
 		child: child{parent: u.parent},
-		fvs: []filedValue{{
+		fvs: []FiledValue{{
 			field: field,
 			value: value,
 		}},
@@ -35,7 +35,39 @@ func (u Update) Set(field string, value any) *Update {
 	return &Update{child{parent: &usv}}
 }
 
-type filedValue struct {
+func (u Update) Sets(filedValues ...any) *Update {
+	if len(filedValues) == 0 {
+		return &u
+	}
+
+	usv := setValue{
+		child: child{parent: u.parent},
+		fvs:   []FiledValue{},
+	}
+
+	for i := 0; i < len(filedValues); i++ {
+		switch t := filedValues[i].(type) {
+		case string:
+			usv.fvs = append(usv.fvs, FldVal(t, filedValues[i+1]))
+			i++
+		case FiledValue:
+			usv.fvs = append(usv.fvs, t)
+		default:
+			panic(fmt.Sprintf("unknown key type in Sets %T", t))
+		}
+	}
+
+	return &Update{child{parent: &usv}}
+}
+
+func FldVal[T any](field string, value T) FiledValue {
+	return FiledValue{
+		field: field,
+		value: value,
+	}
+}
+
+type FiledValue struct {
 	field string
 	value any
 }

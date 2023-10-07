@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/rembosk8/query-builder-go/internal/query"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -96,6 +97,48 @@ func TestPGUpdate(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, expectedSQL, sql)
 		require.Len(t, args, 1)
+		assert.Equal(t, args[0], "go")
+	})
+
+	t.Run("update with multiple sets", func(t *testing.T) {
+		sql, err := qb.Update(tableName).Sets("name", "go", "year", 1990).ToSQL()
+		expectedSQL := fmt.Sprintf("UPDATE %q SET \"name\" = 'go', \"year\" = 1990", tableName)
+		assert.Equal(t, expectedSQL, sql)
+		assert.NoError(t, err)
+
+		sql, args, err := qb.Update(tableName).Sets("name", "go", "year", 1990).ToSQLWithStmts()
+		expectedSQL = fmt.Sprintf("UPDATE %q SET \"name\" = $1, \"year\" = $2", tableName)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedSQL, sql)
+		require.Len(t, args, 2)
+		assert.Equal(t, args[0], "go")
+	})
+
+	t.Run("update with multiple sets with FldVal", func(t *testing.T) {
+		sql, err := qb.Update(tableName).Sets(query.FldVal("name", "go"), query.FldVal("year", 1990)).ToSQL()
+		expectedSQL := fmt.Sprintf("UPDATE %q SET \"name\" = 'go', \"year\" = 1990", tableName)
+		assert.Equal(t, expectedSQL, sql)
+		assert.NoError(t, err)
+
+		sql, args, err := qb.Update(tableName).Sets(query.FldVal("name", "go"), query.FldVal("year", 1990)).ToSQLWithStmts()
+		expectedSQL = fmt.Sprintf("UPDATE %q SET \"name\" = $1, \"year\" = $2", tableName)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedSQL, sql)
+		require.Len(t, args, 2)
+		assert.Equal(t, args[0], "go")
+	})
+
+	t.Run("update with multiple sets with combined approach", func(t *testing.T) {
+		sql, err := qb.Update(tableName).Sets(query.FldVal("name", "go"), "year", 1990).ToSQL()
+		expectedSQL := fmt.Sprintf("UPDATE %q SET \"name\" = 'go', \"year\" = 1990", tableName)
+		assert.Equal(t, expectedSQL, sql)
+		assert.NoError(t, err)
+
+		sql, args, err := qb.Update(tableName).Sets(query.FldVal("name", "go"), "year", 1990).ToSQLWithStmts()
+		expectedSQL = fmt.Sprintf("UPDATE %q SET \"name\" = $1, \"year\" = $2", tableName)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedSQL, sql)
+		require.Len(t, args, 2)
 		assert.Equal(t, args[0], "go")
 	})
 }

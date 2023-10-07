@@ -36,7 +36,7 @@ func (i Insert) ToSQLWithStmts() (sql string, args []any, err error) {
 func (i Insert) Set(field string, value any) *Insert {
 	sv := setValue{
 		child: child{parent: i.parent},
-		fvs: []filedValue{{
+		fvs: []FiledValue{{
 			field: field,
 			value: value,
 		}},
