@@ -177,6 +177,7 @@ func (s Select) Or() *Select {
 	}}
 
 	s.parent = &or
+
 	return &s
 }
 

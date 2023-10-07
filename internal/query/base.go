@@ -44,6 +44,7 @@ func (b BaseBuilder) Select(fields ...string) *SelectCore {
 		core: core{indentBuilder: b.bq.indentBuilder},
 	}
 
+	// todo: try this here b.bq.indentBuilder.Idents()
 	s.fields = append(s.fields, fields...)
 
 	return &s

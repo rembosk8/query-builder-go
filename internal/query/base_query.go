@@ -23,7 +23,7 @@ type baseQuery struct {
 type queryBuilder struct {
 	cols     []identity2.Identity
 	table    identity2.Identity
-	wheres   []*Where //todo: [][]Where or []OrWhere -> OrWhere{[]AndWhere}
+	wheres   []*Where //todo: [][]Where or []OrWhere -> OrWhere{[]AndWhere}. idea: to have a map of []Where, where key is OR-group name
 	offset   *uint
 	limit    *uint
 	orderBys []*Order
@@ -31,7 +31,7 @@ type queryBuilder struct {
 
 	// update.
 	only      bool
-	returning []identity2.Identity
+	returning []identity2.Identity //todo: add to insert
 
 	// insert or update.
 	fields []identity2.Identity
@@ -41,7 +41,7 @@ type queryBuilder struct {
 	indentBuilder *identity2.Builder
 	strBuilder    *strings.Builder
 	//todo: try to add arena https://uptrace.dev/blog/golang-memory-arena.html
-	tag string
+	// tag string
 }
 
 func (qb *queryBuilder) SQLStmts(args []any) (sql string, argsOut []any, err error) {
@@ -77,10 +77,7 @@ func (qb *queryBuilder) collect(p any) { //nolint:cyclop
 		qb.indentBuilder = q.indentBuilder
 
 		if len(q.fields) > 0 {
-			qb.cols = make([]identity2.Identity, len(q.fields))
-			for i := range q.fields {
-				qb.cols[i] = qb.indentBuilder.Ident(q.fields[i])
-			}
+			qb.cols = qb.indentBuilder.Idents(q.fields...)
 		}
 		qb.table = qb.indentBuilder.Ident(q.table)
 	case *Join:
@@ -142,12 +139,23 @@ func (qb *queryBuilder) buildWhere() {
 	if len(qb.wheres) == 0 {
 		return
 	}
-	strs := make([]string, len(qb.wheres))
-	for i := range qb.wheres {
-		strs[i] = qb.wheres[i].String(qb.indentBuilder)
+
+	_, qb.err = fmt.Fprint(qb.strBuilder, " WHERE ")
+	if qb.err != nil {
+		return
 	}
 
-	_, qb.err = fmt.Fprintf(qb.strBuilder, " WHERE %s", strings.Join(strs, " AND ")) // todo: build AND and OR separately
+	_, qb.err = fmt.Fprint(qb.strBuilder, qb.wheres[0].String(qb.indentBuilder))
+	if qb.err != nil {
+		return
+	}
+
+	for i := 1; i < len(qb.wheres); i++ {
+		_, qb.err = fmt.Fprint(qb.strBuilder, " AND ", qb.wheres[i].String(qb.indentBuilder))
+		if qb.err != nil {
+			return
+		}
+	}
 }
 
 func (qb *queryBuilder) buildWherePrepStmt(args []any) []any {
@@ -206,16 +214,18 @@ func (qb *queryBuilder) BuildLimit() {
 }
 
 func (qb *queryBuilder) BuildOrderBy() {
+	if len(qb.orderBys) == 0 || qb.err != nil {
+		return
+	}
+	_, qb.err = fmt.Fprint(qb.strBuilder, " ORDER BY ", qb.orderBys[0].String(qb.indentBuilder))
 	if qb.err != nil {
 		return
 	}
-	if len(qb.orderBys) == 0 {
-		return
-	}
-	strs := make([]string, len(qb.orderBys))
-	for i := range qb.orderBys {
-		strs[i] = qb.orderBys[i].String(qb.indentBuilder)
-	}
 
-	_, qb.err = fmt.Fprintf(qb.strBuilder, " ORDER BY %s", strings.Join(strs, ", "))
+	for i := 1; i < len(qb.orderBys); i++ {
+		_, qb.err = fmt.Fprint(qb.strBuilder, ", ", qb.orderBys[i].String(qb.indentBuilder))
+		if qb.err != nil {
+			return
+		}
+	}
 }

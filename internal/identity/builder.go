@@ -21,7 +21,8 @@ func (b *Builder) Ident(name string) Identity {
 	if b.indentSanitizer != nil {
 		name = b.indentSanitizer.Sanitize(name)
 	}
-	return Identity(name)
+
+	return name
 }
 
 func (b *Builder) Idents(names ...string) []Identity {

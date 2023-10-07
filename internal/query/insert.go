@@ -2,7 +2,6 @@ package query
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -91,17 +90,11 @@ func (qb *queryBuilder) buildValueStmts() (args []any) {
 		return
 	}
 
-	// todo: check if it's possible to not to make an extra slice.
-	numSlice := make([]string, len(qb.values))
-	for j := range qb.values {
-		numSlice[j] = "$" + strconv.Itoa(j+1)
-	}
-
 	_, qb.err = fmt.Fprintf(
 		qb.strBuilder,
 		" (%s) VALUES (%s)",
 		strings.Join(qb.fields, ", "),
-		strings.Join(numSlice, ", "),
+		genNums(1, len(qb.values)),
 	)
 
 	return qb.values

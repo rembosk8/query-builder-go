@@ -19,6 +19,10 @@ type setValue struct {
 	fvs []filedValue
 }
 
+type Update struct {
+	child
+}
+
 func (u Update) Set(field string, value any) *Update {
 	usv := setValue{
 		child: child{parent: u.parent},
@@ -47,10 +51,6 @@ type filedValue struct {
 //	return fmt.Sprintf("%s = $%d", idb.Ident(f.field), i), f.value
 //}
 
-type Update struct {
-	child
-}
-
 var _ Builder = &Update{}
 
 func (u Update) ToSQL() (sql string, err error) {
@@ -74,8 +74,7 @@ func (u Update) ToSQLWithStmts() (sql string, args []any, err error) {
 	return qb.strBuilder.String(), args, nil
 }
 
-func (u Update) Where(field string) *WherePart[*Update] { //nolint:revive
-	// todo: check heap move
+func (u Update) Where(field string) *WherePart[*Update] {
 	w := Where{
 		child: child{parent: u.parent},
 		field: field,
