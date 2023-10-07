@@ -19,6 +19,20 @@ type setValue struct {
 	fvs []FiledValue
 }
 
+func (sv *setValue) Set(fvs []any) {
+	for i := 0; i < len(fvs); i++ {
+		switch t := fvs[i].(type) {
+		case string:
+			sv.fvs = append(sv.fvs, FldVal(t, fvs[i+1]))
+			i++
+		case FiledValue:
+			sv.fvs = append(sv.fvs, t)
+		default:
+			panic(fmt.Sprintf("unknown key type in Sets %T", t))
+		}
+	}
+}
+
 type Update struct {
 	child
 }
@@ -45,20 +59,12 @@ func (u Update) Sets(filedValues ...any) *Update {
 		fvs:   []FiledValue{},
 	}
 
-	for i := 0; i < len(filedValues); i++ {
-		switch t := filedValues[i].(type) {
-		case string:
-			usv.fvs = append(usv.fvs, FldVal(t, filedValues[i+1]))
-			i++
-		case FiledValue:
-			usv.fvs = append(usv.fvs, t)
-		default:
-			panic(fmt.Sprintf("unknown key type in Sets %T", t))
-		}
-	}
+	usv.Set(filedValues)
 
 	return &Update{child{parent: &usv}}
 }
+
+// todo: move to a separate file.
 
 func FldVal[T any](field string, value T) FiledValue {
 	return FiledValue{
@@ -71,17 +77,6 @@ type FiledValue struct {
 	field string
 	value any
 }
-
-//func (f *filedValue) String(idb *identity.Builder) string {
-//	return fmt.Sprintf("%s = %s", idb.Ident(f.field), idb.Value(f.value))
-//}
-//
-//func (f *filedValue) StringStmt(idb *identity.Builder, i uint16) (sql string, v any) {
-//	if idb.IsStandard(f.value) {
-//		return f.String(idb), nil
-//	}
-//	return fmt.Sprintf("%s = $%d", idb.Ident(f.field), i), f.value
-//}
 
 var _ Builder = &Update{}
 

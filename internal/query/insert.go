@@ -47,6 +47,21 @@ func (i Insert) Set(field string, value any) *Insert {
 	return &i
 }
 
+func (i Insert) Sets(filedValues ...any) *Insert {
+	if len(filedValues) == 0 {
+		return &i
+	}
+
+	usv := setValue{
+		child: child{parent: i.parent},
+		fvs:   []FiledValue{},
+	}
+
+	usv.Set(filedValues)
+
+	return &Insert{child{parent: &usv}}
+}
+
 func (qb *queryBuilder) buildInsertInto() {
 	if qb.err != nil {
 		return
